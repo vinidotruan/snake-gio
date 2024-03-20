@@ -70,6 +70,14 @@ func (g *Game) Update() {
 		g.Snake.Head.X += g.Snake.Speed.X
 		g.Snake.Head.Y += g.Snake.Speed.Y
 
+		if len(g.Snake.Body) > 0 {
+			for i := 0; i < len(g.Snake.Body); i++ {
+				println("Teste")
+				rl.DrawRectangle(int32(g.Snake.Body[i].X)+int32(snakeSize*i), int32(g.Snake.Body[i].Y+snakeSize), snakeSize, snakeSize, rl.Red)
+				g.Snake.Body[i].X += g.Snake.Speed.X
+				g.Snake.Body[i].Y += g.Snake.Speed.Y
+			}
+		}
 		if (g.Snake.Head.X+speed > screenWidth || g.Snake.Head.X < 0) ||
 			(g.Snake.Head.Y+speed > screenHeight || g.Snake.Head.Y < 0) {
 			g.GameOver = true
@@ -87,7 +95,9 @@ func (g *Game) Update() {
 
 		if rl.CheckCollisionCircleRec(g.Foods[len(g.Foods)-1].Position, foodRadius, rl.NewRectangle(g.Snake.Head.X, g.Snake.Head.Y, snakeSize, snakeSize)) && g.Foods[len(g.Foods)-1].Status {
 			g.Foods[len(g.Foods)-1].Status = false
+			g.Snake.Body = append(g.Snake.Body, rl.NewVector2(g.Snake.Head.X, g.Snake.Head.Y))
 			g.Score += 5
+			fmt.Print(g.Snake.Body)
 		}
 
 		g.Frames++
