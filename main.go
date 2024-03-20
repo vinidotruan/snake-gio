@@ -72,7 +72,6 @@ func (g *Game) Update() {
 
 		if len(g.Snake.Body) > 0 {
 			for i := 0; i < len(g.Snake.Body); i++ {
-				println("Teste")
 				rl.DrawRectangle(int32(g.Snake.Body[i].X)+int32(snakeSize*i), int32(g.Snake.Body[i].Y+snakeSize), snakeSize, snakeSize, rl.Red)
 				g.Snake.Body[i].X += g.Snake.Speed.X
 				g.Snake.Body[i].Y += g.Snake.Speed.Y
