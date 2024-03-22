@@ -15,9 +15,14 @@ const (
 )
 
 var (
-	passedtime float32
-	direction  string
-	bodyPiece  rl.Vector2
+	passedtime       float32
+	direction        string
+	bodyPiece        rl.Vector2
+	image            *rl.Image
+	headTexture      rl.Texture2D
+	bodyTexture      rl.Texture2D
+	currentDirection float32 = 0
+	targetDirection  float32
 )
 
 type Snake struct {
@@ -45,7 +50,13 @@ func main() {
 	rl.InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window")
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
+	image = rl.LoadImage("assets/head.png")
+	headTexture = rl.LoadTextureFromImage(image)
+	rl.UnloadImage(image)
 
+	image = rl.LoadImage("assets/body.png")
+	bodyTexture = rl.LoadTextureFromImage(image)
+	rl.UnloadImage(image)
 	for !rl.WindowShouldClose() {
 		game.Update()
 		game.Draw()
@@ -62,21 +73,25 @@ func (g *Game) Update() {
 		if (rl.IsKeyPressed(rl.KeyRight) || rl.IsKeyPressed(rl.KeyD)) && strings.Compare(direction, "left") != 0 {
 			g.Snake.Speed = rl.Vector2{X: speed, Y: 0}
 			direction = "right"
+			targetDirection = 90
 		}
 
 		if (rl.IsKeyPressed(rl.KeyLeft) || rl.IsKeyPressed(rl.KeyA)) && strings.Compare(direction, "right") != 0 {
 			g.Snake.Speed = rl.Vector2{X: -speed, Y: 0}
 			direction = "left"
+			targetDirection = -90
 		}
 
 		if (rl.IsKeyPressed(rl.KeyUp) || rl.IsKeyPressed(rl.KeyW)) && strings.Compare(direction, "down") != 0 {
 			g.Snake.Speed = rl.Vector2{X: 0, Y: -speed}
 			direction = "up"
+			targetDirection = 0
 		}
 
 		if (rl.IsKeyPressed(rl.KeyDown) || rl.IsKeyPressed(rl.KeyS)) && strings.Compare(direction, "up") != 0 {
 			g.Snake.Speed = rl.Vector2{X: 0, Y: +speed}
 			direction = "down"
+			targetDirection = 180
 		}
 
 		if g.Frames%5 == 0 {
@@ -97,10 +112,8 @@ func (g *Game) Update() {
 		// draw body
 		if len(g.Snake.Body) > 0 {
 			for i := 0; i < len(g.Snake.Body); i++ {
-				rl.DrawRectangle(
-					int32(g.Snake.Body[i].X),
-					int32(g.Snake.Body[i].Y),
-					snakeSize, snakeSize, rl.Green)
+				body := rl.NewRectangle(g.Snake.Body[i].X, g.Snake.Body[i].Y, snakeSize, snakeSize)
+				rl.DrawTextureRec(bodyTexture, body, rl.NewVector2(g.Snake.Body[i].X, g.Snake.Body[i].Y), rl.White)
 			}
 		}
 		// wall collision
@@ -123,7 +136,10 @@ func (g *Game) Update() {
 
 		// head touch body
 		for j := 0; j < len(g.Snake.Body); j++ {
-			if rl.CheckCollisionRecs(rl.NewRectangle(g.Snake.Head.X, g.Snake.Head.Y, snakeSize, snakeSize), rl.NewRectangle(g.Snake.Body[j].X, g.Snake.Body[j].Y, snakeSize, snakeSize)) {
+			if rl.CheckCollisionRecs(
+				rl.NewRectangle(g.Snake.Head.X, g.Snake.Head.Y, snakeSize, snakeSize),
+				rl.NewRectangle(g.Snake.Body[j].X, g.Snake.Body[j].Y, snakeSize, snakeSize),
+			) {
 				g.GameOver = true
 			}
 		}
@@ -152,8 +168,8 @@ func (g *Game) Update() {
 			}
 
 			bodyPiece = rl.NewVector2(x, y)
-			rl.DrawRectangle(int32(x), int32(y), snakeSize, snakeSize, rl.Green)
-
+			body := rl.NewRectangle(x, y, snakeSize, snakeSize)
+			rl.DrawTextureRec(bodyTexture, body, bodyPiece, rl.White)
 			g.Snake.Body = append(g.Snake.Body, bodyPiece)
 
 		}
@@ -173,8 +189,8 @@ func (g *Game) Update() {
 
 func (g *Game) Draw() {
 	rl.BeginDrawing()
-	rl.ClearBackground(rl.Black)
-	rl.DrawRectangle(int32(g.Snake.Head.X), int32(g.Snake.Head.Y), snakeSize, snakeSize, rl.Red)
+	rl.ClearBackground(rl.NewColor(40, 42, 54, 1))
+	rl.DrawTexture(headTexture, int32(g.Snake.Head.X), int32(g.Snake.Head.Y), rl.White)
 	rl.EndDrawing()
 }
 
