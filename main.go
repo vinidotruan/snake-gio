@@ -9,13 +9,13 @@ import (
 const (
 	screenWidth  = 800
 	screenHeight = 800
-	speed        = 20
+	speed        = 1
 	snakeSize    = 20
 	foodRadius   = snakeSize / 2
 )
 
 var (
-	passedtime       float32
+	pastime          float32
 	direction        string
 	bodyPiece        rl.Vector2
 	image            *rl.Image
@@ -50,7 +50,7 @@ func main() {
 	rl.InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window")
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
-	image = rl.LoadImage("assets/head.png")
+	image = rl.LoadImage("assets/head_debug.png")
 	headTexture = rl.LoadTextureFromImage(image)
 	rl.UnloadImage(image)
 
@@ -94,21 +94,22 @@ func (g *Game) Update() {
 			targetDirection = 180
 		}
 
-		if g.Frames%5 == 0 {
-			// position of body pieces
-			for i := len(g.Snake.Body) - 1; i > 0; i-- {
-				g.Snake.Body[i].X = g.Snake.Body[i-1].X
-				g.Snake.Body[i].Y = g.Snake.Body[i-1].Y
-			}
-
-			if len(g.Snake.Body) > 0 {
-				g.Snake.Body[0] = g.Snake.Head
-			}
-			// move snake head
-			g.Snake.Head.X += g.Snake.Speed.X
-			g.Snake.Head.Y += g.Snake.Speed.Y
-
+		//if g.Frames%5 == 0 {
+		// position of body pieces
+		for i := len(g.Snake.Body) - 1; i > 0; i-- {
+			g.Snake.Body[i].X = g.Snake.Body[i-1].X
+			g.Snake.Body[i].Y = g.Snake.Body[i-1].Y
 		}
+
+		if len(g.Snake.Body) > 0 {
+			g.Snake.Body[0] = g.Snake.Head
+		}
+		fmt.Println(g.Snake.Head)
+		// move snake head
+		g.Snake.Head.X += g.Snake.Speed.X
+		g.Snake.Head.Y += g.Snake.Speed.Y
+
+		//}
 		// draw body
 		if len(g.Snake.Body) > 0 {
 			for i := 0; i < len(g.Snake.Body); i++ {
@@ -124,8 +125,8 @@ func (g *Game) Update() {
 		}
 
 		// draw fruit
-		passedtime += rl.GetFrameTime()
-		if int32(passedtime)%5 == 0 && g.Frames%60 == 0 {
+		pastime += rl.GetFrameTime()
+		if int32(pastime)%5 == 0 && g.Frames%60 == 0 {
 			food := Food{Position: getRandomPosition(), Status: true}
 			g.Foods = append(g.Foods, food)
 		}
@@ -171,7 +172,7 @@ func (g *Game) Update() {
 			body := rl.NewRectangle(x, y, snakeSize, snakeSize)
 			rl.DrawTextureRec(bodyTexture, body, bodyPiece, rl.White)
 			g.Snake.Body = append(g.Snake.Body, bodyPiece)
-
+			g.Pause()
 		}
 
 		g.Frames++
@@ -190,7 +191,8 @@ func (g *Game) Update() {
 func (g *Game) Draw() {
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.NewColor(40, 42, 54, 1))
-	rl.DrawTexture(headTexture, int32(g.Snake.Head.X), int32(g.Snake.Head.Y), rl.White)
+	//rl.DrawTexture(headTexture, int32(g.Snake.Head.X), int32(g.Snake.Head.Y), rl.White)
+	rl.DrawTextureEx(headTexture, rl.NewVector2(g.Snake.Head.X, g.Snake.Head.Y), targetDirection, 10, rl.White)
 	rl.EndDrawing()
 }
 
