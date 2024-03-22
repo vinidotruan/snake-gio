@@ -16,8 +16,8 @@ const (
 
 var (
 	passedtime float32
-	bodyPiece  rl.Vector2
 	direction  string
+	bodyPiece  rl.Vector2
 )
 
 type Snake struct {
@@ -53,52 +53,50 @@ func main() {
 }
 
 func (g *Game) Update() {
-
 	rl.DrawText(fmt.Sprint(direction), screenHeight/2, 0, 20, rl.White)
 	rl.DrawText(fmt.Sprint(g.Score), screenHeight/4, 0, 20, rl.White)
 	if !g.GameOver {
-		if rl.IsKeyPressed(rl.KeyRight) || rl.IsKeyPressed(rl.KeyD) {
+		if rl.IsKeyPressed(rl.KeyP) {
+			g.Pause()
+		}
+		if (rl.IsKeyPressed(rl.KeyRight) || rl.IsKeyPressed(rl.KeyD)) && strings.Compare(direction, "left") != 0 {
 			g.Snake.Speed = rl.Vector2{X: speed, Y: 0}
 			direction = "right"
 		}
 
-		if rl.IsKeyPressed(rl.KeyLeft) || rl.IsKeyPressed(rl.KeyA) {
+		if (rl.IsKeyPressed(rl.KeyLeft) || rl.IsKeyPressed(rl.KeyA)) && strings.Compare(direction, "right") != 0 {
 			g.Snake.Speed = rl.Vector2{X: -speed, Y: 0}
 			direction = "left"
 		}
 
-		if rl.IsKeyPressed(rl.KeyUp) || rl.IsKeyPressed(rl.KeyW) {
+		if (rl.IsKeyPressed(rl.KeyUp) || rl.IsKeyPressed(rl.KeyW)) && strings.Compare(direction, "down") != 0 {
 			g.Snake.Speed = rl.Vector2{X: 0, Y: -speed}
 			direction = "up"
 		}
 
-		if rl.IsKeyPressed(rl.KeyDown) || rl.IsKeyPressed(rl.KeyS) {
+		if (rl.IsKeyPressed(rl.KeyDown) || rl.IsKeyPressed(rl.KeyS)) && strings.Compare(direction, "up") != 0 {
 			g.Snake.Speed = rl.Vector2{X: 0, Y: +speed}
 			direction = "down"
 		}
 
 		if g.Frames%5 == 0 {
 			// position of body pieces
-			for i := 0; i < len(g.Snake.Body)-1; i++ {
-				if i == 0 {
-					g.Snake.Body[i].X = g.Snake.Head.X
-					g.Snake.Body[i].Y = g.Snake.Head.Y
-				} else {
-					g.Snake.Body[i].X = g.Snake.Body[i+1].X
-					g.Snake.Body[i].Y = g.Snake.Body[i+1].Y
-				}
+			for i := len(g.Snake.Body) - 1; i > 0; i-- {
+				g.Snake.Body[i].X = g.Snake.Body[i-1].X
+				g.Snake.Body[i].Y = g.Snake.Body[i-1].Y
+			}
 
+			if len(g.Snake.Body) > 0 {
+				g.Snake.Body[0] = g.Snake.Head
 			}
 			// move snake head
 			g.Snake.Head.X += g.Snake.Speed.X
 			g.Snake.Head.Y += g.Snake.Speed.Y
-		}
 
+		}
 		// draw body
 		if len(g.Snake.Body) > 0 {
 			for i := 0; i < len(g.Snake.Body); i++ {
-				fmt.Println("Caiu")
-
 				rl.DrawRectangle(
 					int32(g.Snake.Body[i].X),
 					int32(g.Snake.Body[i].Y),
@@ -123,22 +121,24 @@ func (g *Game) Update() {
 			rl.DrawCircle(int32(g.Foods[len(g.Foods)-1].Position.X), int32(g.Foods[len(g.Foods)-1].Position.Y), foodRadius, rl.RayWhite)
 		}
 
+		// head touch body
+		for j := 0; j < len(g.Snake.Body); j++ {
+			if rl.CheckCollisionRecs(rl.NewRectangle(g.Snake.Head.X, g.Snake.Head.Y, snakeSize, snakeSize), rl.NewRectangle(g.Snake.Body[j].X, g.Snake.Body[j].Y, snakeSize, snakeSize)) {
+				g.GameOver = true
+			}
+		}
+
 		// was fruit ate
 		if rl.CheckCollisionCircleRec(g.Foods[len(g.Foods)-1].Position, foodRadius, rl.NewRectangle(g.Snake.Head.X, g.Snake.Head.Y, snakeSize, snakeSize)) && g.Foods[len(g.Foods)-1].Status {
 			g.Foods[len(g.Foods)-1].Status = false
 			g.Score += 5
 
-			x := func() float32 {
+			// get position of last body piece
+			x, y := func() (float32, float32) {
 				if len(g.Snake.Body) > 0 {
-					return g.Snake.Body[len(g.Snake.Body)-1].X
+					return g.Snake.Body[len(g.Snake.Body)-1].X, g.Snake.Body[len(g.Snake.Body)-1].Y
 				}
-				return g.Snake.Head.X
-			}()
-			y := func() float32 {
-				if len(g.Snake.Body) > 0 {
-					return g.Snake.Body[len(g.Snake.Body)-1].Y
-				}
-				return g.Snake.Head.Y
+				return g.Snake.Head.X, g.Snake.Head.Y
 			}()
 
 			if strings.Compare(direction, "right") == 0 {
@@ -152,12 +152,9 @@ func (g *Game) Update() {
 			}
 
 			bodyPiece = rl.NewVector2(x, y)
-			fmt.Println("Snake position", g.Snake.Head)
-			fmt.Println("Body piece", bodyPiece)
 			rl.DrawRectangle(int32(x), int32(y), snakeSize, snakeSize, rl.Green)
 
 			g.Snake.Body = append(g.Snake.Body, bodyPiece)
-			g.Pause()
 
 		}
 
@@ -178,12 +175,12 @@ func (g *Game) Draw() {
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.Black)
 	rl.DrawRectangle(int32(g.Snake.Head.X), int32(g.Snake.Head.Y), snakeSize, snakeSize, rl.Red)
-
 	rl.EndDrawing()
 }
 
 func (g *Game) Init() {
 	g.Snake = Snake{Head: rl.NewVector2(screenWidth/2, screenHeight/2), Body: []rl.Vector2{}}
+	fmt.Println(g.Snake.Body)
 }
 
 func (g *Game) Pause() {
