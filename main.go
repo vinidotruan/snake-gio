@@ -49,7 +49,7 @@ func main() {
 	game := Game{GameOver: false}
 	game.Init()
 
-	rl.InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window")
+	rl.InitWindow(screenWidth, screenHeight, "dotsnake")
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
 	image = rl.LoadImage("assets/head_v1.png")
@@ -77,7 +77,6 @@ func (g *Game) Update() {
 
 		// Get new fruit position
 		pastime += rl.GetFrameTime()
-
 		if int32(pastime)%5 == 0 && g.Frames%60 == 0 {
 			position := getRandomPosition()
 			food := Food{Shape: rl.NewRectangle(position.X, position.Y, snakeSize, snakeSize), Status: true}
@@ -85,11 +84,8 @@ func (g *Game) Update() {
 		}
 
 		// was fruit ate
-		lastFruit := g.Foods[len(g.Foods)-1]
-		if rl.CheckCollisionRecs(lastFruit.Shape, g.Snake.Head) && lastFruit.Status {
-			fmt.Println("Teste")
-			rl.DrawText("Fruta comida", 0, 0, 10, rl.White)
-			lastFruit.Status = false
+		if rl.CheckCollisionRecs(g.Foods[len(g.Foods)-1].Shape, g.Snake.Head) && g.Foods[len(g.Foods)-1].Status {
+			g.Foods[len(g.Foods)-1].Status = false
 			g.Score += 5
 
 			// get position of last body piece
@@ -134,8 +130,13 @@ func (g *Game) Draw() {
 
 	// Draw body
 	if len(g.Snake.Bodies) > 0 {
-		for k := len(g.Snake.Bodies) - 1; k > 0; k-- {
-			rl.DrawTextureRec(bodyTexture, g.Snake.Bodies[k].rectangle, rl.NewVector2(g.Snake.Bodies[k].rectangle.X, g.Snake.Bodies[k].rectangle.Y), rl.White)
+		for k := 0; k < len(g.Snake.Bodies); k++ {
+			rl.DrawTextureRec(
+				bodyTexture,
+				g.Snake.Bodies[k].rectangle,
+				rl.NewVector2(g.Snake.Bodies[k].rectangle.X, g.Snake.Bodies[k].rectangle.Y),
+				rl.White,
+			)
 		}
 	}
 
@@ -186,8 +187,7 @@ func (g *Game) ControlsHandler() {
 }
 
 func (g *Game) Movement() {
-
-	if g.Frames%5 == 0 {
+	if g.Frames%3 == 0 {
 		for i := len(g.Snake.Bodies) - 1; i > 0; i-- {
 			g.Snake.Bodies[i].rectangle.X = g.Snake.Bodies[i-1].rectangle.X
 			g.Snake.Bodies[i].rectangle.Y = g.Snake.Bodies[i-1].rectangle.Y
@@ -197,11 +197,11 @@ func (g *Game) Movement() {
 			g.Snake.Bodies[0].rectangle.X = g.Snake.Head.X
 			g.Snake.Bodies[0].rectangle.Y = g.Snake.Head.Y
 		}
+
 		// move snake head
 		g.Snake.Head.X += g.Snake.Speed.X
 		g.Snake.Head.Y += g.Snake.Speed.Y
 	}
-
 }
 
 func (g *Game) BodyXHeadCollision() {
