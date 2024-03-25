@@ -87,13 +87,15 @@ func (g *Game) Update() {
 		// was fruit ate
 		lastFruit := g.Foods[len(g.Foods)-1]
 		if rl.CheckCollisionRecs(lastFruit.Shape, g.Snake.Head) && lastFruit.Status {
+			fmt.Println("Teste")
+			rl.DrawText("Fruta comida", 0, 0, 10, rl.White)
 			lastFruit.Status = false
 			g.Score += 5
 
-			lastBodyPiece := g.Snake.Bodies[len(g.Snake.Bodies)-1]
 			// get position of last body piece
 			x, y := func() (float32, float32) {
 				if len(g.Snake.Bodies) > 0 {
+					lastBodyPiece := g.Snake.Bodies[len(g.Snake.Bodies)-1]
 					return lastBodyPiece.rectangle.X, lastBodyPiece.rectangle.Y
 				}
 				return g.Snake.Head.X, g.Snake.Head.Y
