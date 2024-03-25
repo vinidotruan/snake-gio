@@ -9,7 +9,7 @@ import (
 const (
 	screenWidth  = 800
 	screenHeight = 800
-	speed        = 5
+	speed        = 20
 	snakeSize    = 20
 )
 
@@ -68,65 +68,16 @@ func main() {
 func (g *Game) Update() {
 	rl.DrawText(fmt.Sprint(direction), screenHeight/2, 0, 20, rl.White)
 	rl.DrawText(fmt.Sprint(g.Score), screenHeight/4, 0, 20, rl.White)
+
 	if !g.GameOver {
-		if rl.IsKeyPressed(rl.KeyP) {
-			g.Pause()
-		}
-		if (rl.IsKeyPressed(rl.KeyRight) || rl.IsKeyPressed(rl.KeyD)) && strings.Compare(direction, "left") != 0 {
-			g.Snake.Speed = rl.Vector2{X: speed, Y: 0}
-			direction = "right"
-			targetDirection = 90
-		}
-
-		if (rl.IsKeyPressed(rl.KeyLeft) || rl.IsKeyPressed(rl.KeyA)) && strings.Compare(direction, "right") != 0 {
-			g.Snake.Speed = rl.Vector2{X: -speed, Y: 0}
-			direction = "left"
-			targetDirection = -90
-		}
-
-		if (rl.IsKeyPressed(rl.KeyUp) || rl.IsKeyPressed(rl.KeyW)) && strings.Compare(direction, "down") != 0 {
-			g.Snake.Speed = rl.Vector2{X: 0, Y: -speed}
-			direction = "up"
-			targetDirection = 0
-		}
-
-		if (rl.IsKeyPressed(rl.KeyDown) || rl.IsKeyPressed(rl.KeyS)) && strings.Compare(direction, "up") != 0 {
-			g.Snake.Speed = rl.Vector2{X: 0, Y: +speed}
-			direction = "down"
-			targetDirection = 180
-		}
-
-		// position of body pieces
-		for i := len(g.Snake.Bodies) - 1; i > 0; i-- {
-			g.Snake.Bodies[i].rectangle.X = g.Snake.Bodies[i-1].rectangle.X
-			g.Snake.Bodies[i].rectangle.Y = g.Snake.Bodies[i-1].rectangle.Y
-		}
-
-		if len(g.Snake.Bodies) > 0 {
-			g.Snake.Bodies[0].rectangle.X = g.Snake.Head.X
-			g.Snake.Bodies[0].rectangle.Y = g.Snake.Head.Y
-		}
-		// move snake head
-		g.Snake.Head.X += g.Snake.Speed.X
-		g.Snake.Head.Y += g.Snake.Speed.Y
-
-		// head touch body
-		for j := len(g.Snake.Bodies) - 1; j > 0; j-- {
-			if rl.CheckCollisionRecs(
-				rl.NewRectangle(g.Snake.Head.X, g.Snake.Head.Y, snakeSize, snakeSize),
-				g.Snake.Bodies[j].rectangle,
-			) {
-				g.GameOver = true
-			}
-		}
-
-		// wall collision
-		if (g.Snake.Head.X+speed > screenWidth || g.Snake.Head.X < 0) || (g.Snake.Head.Y+speed > screenHeight || g.Snake.Head.Y < 0) {
-			g.GameOver = true
-		}
+		g.ControlsHandler()
+		g.Movement()
+		g.BodyXHeadCollision()
+		g.WallCollisionValidation()
 
 		// Get new fruit position
 		pastime += rl.GetFrameTime()
+
 		if int32(pastime)%5 == 0 && g.Frames%60 == 0 {
 			position := getRandomPosition()
 			food := Food{Shape: rl.NewRectangle(position.X, position.Y, snakeSize, snakeSize), Status: true}
@@ -201,6 +152,70 @@ func (g *Game) Init() {
 
 func (g *Game) Pause() {
 	g.Snake.Speed = rl.NewVector2(0, 0)
+}
+
+func (g *Game) ControlsHandler() {
+	if rl.IsKeyPressed(rl.KeyP) {
+		g.Pause()
+	}
+	if (rl.IsKeyPressed(rl.KeyRight) || rl.IsKeyPressed(rl.KeyD)) && strings.Compare(direction, "left") != 0 {
+		g.Snake.Speed = rl.Vector2{X: speed, Y: 0}
+		direction = "right"
+		targetDirection = 90
+	}
+
+	if (rl.IsKeyPressed(rl.KeyLeft) || rl.IsKeyPressed(rl.KeyA)) && strings.Compare(direction, "right") != 0 {
+		g.Snake.Speed = rl.Vector2{X: -speed, Y: 0}
+		direction = "left"
+		targetDirection = -90
+	}
+
+	if (rl.IsKeyPressed(rl.KeyUp) || rl.IsKeyPressed(rl.KeyW)) && strings.Compare(direction, "down") != 0 {
+		g.Snake.Speed = rl.Vector2{X: 0, Y: -speed}
+		direction = "up"
+		targetDirection = 0
+	}
+
+	if (rl.IsKeyPressed(rl.KeyDown) || rl.IsKeyPressed(rl.KeyS)) && strings.Compare(direction, "up") != 0 {
+		g.Snake.Speed = rl.Vector2{X: 0, Y: +speed}
+		direction = "down"
+		targetDirection = 180
+	}
+}
+
+func (g *Game) Movement() {
+
+	if g.Frames%5 == 0 {
+		for i := len(g.Snake.Bodies) - 1; i > 0; i-- {
+			g.Snake.Bodies[i].rectangle.X = g.Snake.Bodies[i-1].rectangle.X
+			g.Snake.Bodies[i].rectangle.Y = g.Snake.Bodies[i-1].rectangle.Y
+		}
+
+		if len(g.Snake.Bodies) > 0 {
+			g.Snake.Bodies[0].rectangle.X = g.Snake.Head.X
+			g.Snake.Bodies[0].rectangle.Y = g.Snake.Head.Y
+		}
+		// move snake head
+		g.Snake.Head.X += g.Snake.Speed.X
+		g.Snake.Head.Y += g.Snake.Speed.Y
+	}
+
+}
+
+func (g *Game) BodyXHeadCollision() {
+	for j := len(g.Snake.Bodies) - 1; j > 0; j-- {
+		if rl.CheckCollisionRecs(g.Snake.Head, g.Snake.Bodies[j].rectangle) {
+			g.GameOver = true
+		}
+	}
+
+}
+
+func (g *Game) WallCollisionValidation() {
+	if (g.Snake.Head.X+speed > screenWidth || g.Snake.Head.X < 0) || (g.Snake.Head.Y+speed > screenHeight || g.Snake.Head.Y < 0) {
+		g.GameOver = true
+	}
+
 }
 
 func getRandomPosition() rl.Vector2 {
