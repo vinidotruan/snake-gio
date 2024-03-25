@@ -9,7 +9,7 @@ import (
 const (
 	screenWidth  = 800
 	screenHeight = 800
-	speed        = 20
+	speed        = 10
 	snakeSize    = 20
 	foodRadius   = snakeSize / 2
 )
@@ -94,20 +94,20 @@ func (g *Game) Update() {
 			targetDirection = 180
 		}
 
-		if g.Frames%5 == 0 {
-			// position of body pieces
-			for i := len(g.Snake.Body) - 1; i > 0; i-- {
-				g.Snake.Body[i].X = g.Snake.Body[i-1].X
-				g.Snake.Body[i].Y = g.Snake.Body[i-1].Y
-			}
-
-			if len(g.Snake.Body) > 0 {
-				g.Snake.Body[0] = g.Snake.Head
-			}
-			// move snake head
-			g.Snake.Head.X += g.Snake.Speed.X
-			g.Snake.Head.Y += g.Snake.Speed.Y
+		//if g.Frames%5 == 0 {
+		// position of body pieces
+		for i := len(g.Snake.Body) - 1; i > 0; i-- {
+			g.Snake.Body[i].X = g.Snake.Body[i-1].X
+			g.Snake.Body[i].Y = g.Snake.Body[i-1].Y
 		}
+
+		if len(g.Snake.Body) > 0 {
+			g.Snake.Body[0] = g.Snake.Head
+		}
+		// move snake head
+		g.Snake.Head.X += g.Snake.Speed.X
+		g.Snake.Head.Y += g.Snake.Speed.Y
+		//}
 
 		// head touch body
 		for j := 0; j < len(g.Snake.Body); j++ {
