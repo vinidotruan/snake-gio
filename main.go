@@ -74,41 +74,8 @@ func (g *Game) Update() {
 		g.Movement()
 		g.BodyXHeadCollision()
 		g.WallCollisionValidation()
-
-		// Get new fruit position
-		pastime += rl.GetFrameTime()
-		if int32(pastime)%5 == 0 && g.Frames%60 == 0 {
-			position := getRandomPosition()
-			food := Food{Shape: rl.NewRectangle(position.X, position.Y, snakeSize, snakeSize), Status: true}
-			g.Foods = append(g.Foods, food)
-		}
-
-		// was fruit ate
-		if rl.CheckCollisionRecs(g.Foods[len(g.Foods)-1].Shape, g.Snake.Head) && g.Foods[len(g.Foods)-1].Status {
-			g.Foods[len(g.Foods)-1].Status = false
-			g.Score += 5
-
-			// get position of last body piece
-			x, y := func() (float32, float32) {
-				if len(g.Snake.Bodies) > 0 {
-					lastBodyPiece := g.Snake.Bodies[len(g.Snake.Bodies)-1]
-					return lastBodyPiece.rectangle.X, lastBodyPiece.rectangle.Y
-				}
-				return g.Snake.Head.X, g.Snake.Head.Y
-			}()
-
-			if strings.Compare(direction, "right") == 0 {
-				x -= snakeSize
-			} else if strings.Compare(direction, "left") == 0 {
-				x += snakeSize
-			} else if strings.Compare(direction, "up") == 0 {
-				y += snakeSize
-			} else {
-				y -= snakeSize
-			}
-
-			g.Snake.Bodies = append(g.Snake.Bodies, Body{rectangle: rl.NewRectangle(x, y, snakeSize, snakeSize)})
-		}
+		g.SpawnFood()
+		g.FoodCollision()
 
 		g.Frames++
 
@@ -218,6 +185,42 @@ func (g *Game) WallCollisionValidation() {
 		g.GameOver = true
 	}
 
+}
+
+func (g *Game) SpawnFood() {
+	pastime += rl.GetFrameTime()
+	if int32(pastime)%5 == 0 && g.Frames%60 == 0 {
+		position := getRandomPosition()
+		food := Food{Shape: rl.NewRectangle(position.X, position.Y, snakeSize, snakeSize), Status: true}
+		g.Foods = append(g.Foods, food)
+	}
+}
+
+func (g *Game) FoodCollision() {
+	if rl.CheckCollisionRecs(g.Foods[len(g.Foods)-1].Shape, g.Snake.Head) && g.Foods[len(g.Foods)-1].Status {
+		g.Foods[len(g.Foods)-1].Status = false
+		g.Score += 5
+
+		x, y := func() (float32, float32) {
+			if len(g.Snake.Bodies) > 0 {
+				lastBodyPiece := g.Snake.Bodies[len(g.Snake.Bodies)-1]
+				return lastBodyPiece.rectangle.X, lastBodyPiece.rectangle.Y
+			}
+			return g.Snake.Head.X, g.Snake.Head.Y
+		}()
+
+		if strings.Compare(direction, "right") == 0 {
+			x -= snakeSize
+		} else if strings.Compare(direction, "left") == 0 {
+			x += snakeSize
+		} else if strings.Compare(direction, "up") == 0 {
+			y += snakeSize
+		} else {
+			y -= snakeSize
+		}
+
+		g.Snake.Bodies = append(g.Snake.Bodies, Body{rectangle: rl.NewRectangle(x, y, snakeSize, snakeSize)})
+	}
 }
 
 func getRandomPosition() rl.Vector2 {
