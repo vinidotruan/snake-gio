@@ -9,7 +9,7 @@ import (
 const (
 	screenWidth  = 800
 	screenHeight = 800
-	speed        = 1
+	speed        = 20
 	snakeSize    = 20
 	foodRadius   = snakeSize / 2
 )
@@ -50,11 +50,11 @@ func main() {
 	rl.InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window")
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
-	image = rl.LoadImage("assets/head_debug.png")
+	image = rl.LoadImage("assets/head_v1.png")
 	headTexture = rl.LoadTextureFromImage(image)
 	rl.UnloadImage(image)
 
-	image = rl.LoadImage("assets/body.png")
+	image = rl.LoadImage("assets/body_v1.png")
 	bodyTexture = rl.LoadTextureFromImage(image)
 	rl.UnloadImage(image)
 	for !rl.WindowShouldClose() {
@@ -94,45 +94,19 @@ func (g *Game) Update() {
 			targetDirection = 180
 		}
 
-		//if g.Frames%5 == 0 {
-		// position of body pieces
-		for i := len(g.Snake.Body) - 1; i > 0; i-- {
-			g.Snake.Body[i].X = g.Snake.Body[i-1].X
-			g.Snake.Body[i].Y = g.Snake.Body[i-1].Y
-		}
-
-		if len(g.Snake.Body) > 0 {
-			g.Snake.Body[0] = g.Snake.Head
-		}
-		fmt.Println(g.Snake.Head)
-		// move snake head
-		g.Snake.Head.X += g.Snake.Speed.X
-		g.Snake.Head.Y += g.Snake.Speed.Y
-
-		//}
-		// draw body
-		if len(g.Snake.Body) > 0 {
-			for i := 0; i < len(g.Snake.Body); i++ {
-				body := rl.NewRectangle(g.Snake.Body[i].X, g.Snake.Body[i].Y, snakeSize, snakeSize)
-				rl.DrawTextureRec(bodyTexture, body, rl.NewVector2(g.Snake.Body[i].X, g.Snake.Body[i].Y), rl.White)
+		if g.Frames%5 == 0 {
+			// position of body pieces
+			for i := len(g.Snake.Body) - 1; i > 0; i-- {
+				g.Snake.Body[i].X = g.Snake.Body[i-1].X
+				g.Snake.Body[i].Y = g.Snake.Body[i-1].Y
 			}
-		}
-		// wall collision
-		if (g.Snake.Head.X+speed > screenWidth || g.Snake.Head.X < 0) ||
-			(g.Snake.Head.Y+speed > screenHeight || g.Snake.Head.Y < 0) {
-			g.Pause()
-			// g.GameOver = true
-		}
 
-		// draw fruit
-		pastime += rl.GetFrameTime()
-		if int32(pastime)%5 == 0 && g.Frames%60 == 0 {
-			food := Food{Position: getRandomPosition(), Status: true}
-			g.Foods = append(g.Foods, food)
-		}
-
-		if len(g.Foods)-1 >= 0 && g.Foods[len(g.Foods)-1].Status {
-			rl.DrawCircle(int32(g.Foods[len(g.Foods)-1].Position.X), int32(g.Foods[len(g.Foods)-1].Position.Y), foodRadius, rl.RayWhite)
+			if len(g.Snake.Body) > 0 {
+				g.Snake.Body[0] = g.Snake.Head
+			}
+			// move snake head
+			g.Snake.Head.X += g.Snake.Speed.X
+			g.Snake.Head.Y += g.Snake.Speed.Y
 		}
 
 		// head touch body
@@ -143,6 +117,18 @@ func (g *Game) Update() {
 			) {
 				g.GameOver = true
 			}
+		}
+
+		// wall collision
+		if (g.Snake.Head.X+speed > screenWidth || g.Snake.Head.X < 0) || (g.Snake.Head.Y+speed > screenHeight || g.Snake.Head.Y < 0) {
+			g.GameOver = true
+		}
+
+		// draw fruit
+		pastime += rl.GetFrameTime()
+		if int32(pastime)%5 == 0 && g.Frames%60 == 0 {
+			food := Food{Position: getRandomPosition(), Status: true}
+			g.Foods = append(g.Foods, food)
 		}
 
 		// was fruit ate
@@ -169,10 +155,7 @@ func (g *Game) Update() {
 			}
 
 			bodyPiece = rl.NewVector2(x, y)
-			body := rl.NewRectangle(x, y, snakeSize, snakeSize)
-			rl.DrawTextureRec(bodyTexture, body, bodyPiece, rl.White)
 			g.Snake.Body = append(g.Snake.Body, bodyPiece)
-			g.Pause()
 		}
 
 		g.Frames++
@@ -191,14 +174,26 @@ func (g *Game) Update() {
 func (g *Game) Draw() {
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.NewColor(40, 42, 54, 1))
-	//rl.DrawTexture(headTexture, int32(g.Snake.Head.X), int32(g.Snake.Head.Y), rl.White)
-	rl.DrawTextureEx(headTexture, rl.NewVector2(g.Snake.Head.X, g.Snake.Head.Y), targetDirection, 10, rl.White)
+	rl.DrawTexture(headTexture, int32(g.Snake.Head.X), int32(g.Snake.Head.Y), rl.White)
+
+	// draw body
+	if len(g.Snake.Body) > 0 {
+		for i := 0; i < len(g.Snake.Body); i++ {
+			body := rl.NewRectangle(g.Snake.Body[i].X, g.Snake.Body[i].Y, snakeSize, snakeSize)
+			rl.DrawTextureRec(bodyTexture, body, rl.NewVector2(g.Snake.Body[i].X, g.Snake.Body[i].Y), rl.White)
+		}
+	}
+
+	// Disable fruit
+	if len(g.Foods)-1 >= 0 && g.Foods[len(g.Foods)-1].Status {
+		rl.DrawCircle(int32(g.Foods[len(g.Foods)-1].Position.X), int32(g.Foods[len(g.Foods)-1].Position.Y), foodRadius, rl.RayWhite)
+	}
+	//rl.DrawTextureEx(headTexture, rl.NewVector2(g.Snake.Head.X, g.Snake.Head.Y), targetDirection, 10, rl.White)
 	rl.EndDrawing()
 }
 
 func (g *Game) Init() {
 	g.Snake = Snake{Head: rl.NewVector2(screenWidth/2, screenHeight/2), Body: []rl.Vector2{}}
-	fmt.Println(g.Snake.Body)
 }
 
 func (g *Game) Pause() {
