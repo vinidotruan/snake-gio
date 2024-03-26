@@ -11,16 +11,24 @@ const (
 	screenHeight = 800
 	speed        = 20
 	snakeSize    = 20
+	screenOffset = 80
+
+	initialX  = screenOffset
+	initialY  = screenOffset
+	finalX    = screenWidth - screenOffset
+	finalY    = screenHeight - screenOffset
+	frameRate = 60
 )
 
 var (
-	pastime          float32
-	direction        string
-	image            *rl.Image
-	headTexture      rl.Texture2D
-	bodyTexture      rl.Texture2D
-	currentDirection float32 = 0
-	targetDirection  float32
+	pastime     float32
+	direction   string
+	image       *rl.Image
+	headTexture rl.Texture2D
+	purple      = rl.NewColor(102, 102, 204, 255)
+	green       = rl.NewColor(153, 204, 102, 255)
+	greenDark   = rl.NewColor(102, 153, 153, 255)
+	gray        = rl.NewColor(204, 204, 204, 255)
 )
 
 type Snake struct {
@@ -51,14 +59,8 @@ func main() {
 
 	rl.InitWindow(screenWidth, screenHeight, "dotsnake")
 	defer rl.CloseWindow()
-	rl.SetTargetFPS(60)
-	image = rl.LoadImage("assets/head_v1.png")
-	headTexture = rl.LoadTextureFromImage(image)
-	rl.UnloadImage(image)
+	rl.SetTargetFPS(frameRate)
 
-	image = rl.LoadImage("assets/body_v1.png")
-	bodyTexture = rl.LoadTextureFromImage(image)
-	rl.UnloadImage(image)
 	for !rl.WindowShouldClose() {
 		game.Update()
 		game.Draw()
@@ -73,8 +75,8 @@ func (g *Game) Update() {
 		g.ControlsHandler()
 		g.Movement()
 		g.BodyXHeadCollision()
+
 		g.WallCollisionValidation()
-		g.SpawnFood()
 		g.FoodCollision()
 
 		g.Frames++
@@ -92,27 +94,13 @@ func (g *Game) Update() {
 
 func (g *Game) Draw() {
 	rl.BeginDrawing()
-	rl.ClearBackground(rl.NewColor(40, 42, 54, 1))
-	rl.DrawTexture(headTexture, int32(g.Snake.Head.X), int32(g.Snake.Head.Y), rl.White)
+	rl.ClearBackground(rl.NewColor(40, 42, 54, 255))
+	rl.DrawRectangle(int32(g.Snake.Head.X), int32(g.Snake.Head.Y), snakeSize, snakeSize, purple)
 
-	// Draw body
-	if len(g.Snake.Bodies) > 0 {
-		for k := 0; k < len(g.Snake.Bodies); k++ {
-			rl.DrawTextureRec(
-				bodyTexture,
-				g.Snake.Bodies[k].rectangle,
-				rl.NewVector2(g.Snake.Bodies[k].rectangle.X, g.Snake.Bodies[k].rectangle.Y),
-				rl.White,
-			)
-		}
-	}
+	DrawGrid()
+	g.DrawBodies()
+	g.DrawFruits()
 
-	// Draw fruit
-	if len(g.Foods)-1 >= 0 && g.Foods[len(g.Foods)-1].Status {
-		fruit := rl.NewRectangle(g.Foods[len(g.Foods)-1].Shape.X, g.Foods[len(g.Foods)-1].Shape.Y, snakeSize, snakeSize)
-		rl.DrawRectangle(int32(fruit.X), int32(fruit.Y), int32(fruit.Width), int32(fruit.Height), rl.White)
-	}
-	//rl.DrawTextureEx(headTexture, rl.NewVector2(g.Snake.Head.X, g.Snake.Head.Y), targetDirection, 10, rl.White)
 	rl.EndDrawing()
 }
 
@@ -131,25 +119,21 @@ func (g *Game) ControlsHandler() {
 	if (rl.IsKeyPressed(rl.KeyRight) || rl.IsKeyPressed(rl.KeyD)) && strings.Compare(direction, "left") != 0 {
 		g.Snake.Speed = rl.Vector2{X: speed, Y: 0}
 		direction = "right"
-		targetDirection = 90
 	}
 
 	if (rl.IsKeyPressed(rl.KeyLeft) || rl.IsKeyPressed(rl.KeyA)) && strings.Compare(direction, "right") != 0 {
 		g.Snake.Speed = rl.Vector2{X: -speed, Y: 0}
 		direction = "left"
-		targetDirection = -90
 	}
 
 	if (rl.IsKeyPressed(rl.KeyUp) || rl.IsKeyPressed(rl.KeyW)) && strings.Compare(direction, "down") != 0 {
 		g.Snake.Speed = rl.Vector2{X: 0, Y: -speed}
 		direction = "up"
-		targetDirection = 0
 	}
 
 	if (rl.IsKeyPressed(rl.KeyDown) || rl.IsKeyPressed(rl.KeyS)) && strings.Compare(direction, "up") != 0 {
 		g.Snake.Speed = rl.Vector2{X: 0, Y: +speed}
 		direction = "down"
-		targetDirection = 180
 	}
 }
 
@@ -181,22 +165,24 @@ func (g *Game) BodyXHeadCollision() {
 }
 
 func (g *Game) WallCollisionValidation() {
-	if (g.Snake.Head.X+speed > screenWidth || g.Snake.Head.X < 0) || (g.Snake.Head.Y+speed > screenHeight || g.Snake.Head.Y < 0) {
+	if (g.Snake.Head.X+speed > finalX || g.Snake.Head.X-speed < initialX) ||
+		(g.Snake.Head.Y+speed > finalY || g.Snake.Head.Y < initialY) {
 		g.GameOver = true
 	}
 
 }
 
 func (g *Game) SpawnFood() {
-	pastime += rl.GetFrameTime()
-	if int32(pastime)%5 == 0 && g.Frames%60 == 0 {
-		position := getRandomPosition()
-		food := Food{Shape: rl.NewRectangle(position.X, position.Y, snakeSize, snakeSize), Status: true}
-		g.Foods = append(g.Foods, food)
-	}
+	position := getRandomPosition()
+	food := Food{Shape: rl.NewRectangle(position.X, position.Y, snakeSize, snakeSize), Status: true}
+	g.Foods = append(g.Foods, food)
 }
 
 func (g *Game) FoodCollision() {
+
+	if len(g.Foods) == 0 {
+		g.SpawnFood()
+	}
 	if rl.CheckCollisionRecs(g.Foods[len(g.Foods)-1].Shape, g.Snake.Head) && g.Foods[len(g.Foods)-1].Status {
 		g.Foods[len(g.Foods)-1].Status = false
 		g.Score += 5
@@ -220,9 +206,47 @@ func (g *Game) FoodCollision() {
 		}
 
 		g.Snake.Bodies = append(g.Snake.Bodies, Body{rectangle: rl.NewRectangle(x, y, snakeSize, snakeSize)})
+		g.SpawnFood()
+
 	}
 }
 
 func getRandomPosition() rl.Vector2 {
-	return rl.NewVector2(float32(rl.GetRandomValue(0, screenWidth-20)), float32(rl.GetRandomValue(0, screenHeight-20)))
+	x := float32(rl.GetRandomValue(initialX, finalX) / snakeSize * snakeSize)
+	y := float32(rl.GetRandomValue(initialY, finalY) / snakeSize * snakeSize)
+
+	return rl.NewVector2(x, y)
+}
+
+func DrawGrid() {
+
+	rl.DrawLine(initialX, initialY, initialX, finalY, greenDark)
+	rl.DrawLine(finalX, initialY, finalX, finalY, greenDark)
+
+	rl.DrawLine(initialX, initialY, finalX, initialY, greenDark)
+	rl.DrawLine(initialX, finalY, finalX, finalY, greenDark)
+	color := rl.NewColor(204, 204, 204, 20)
+	for x := int32(0); x < int32(screenWidth); x += snakeSize {
+		rl.DrawLine(x, 0, x, int32(screenHeight), color)
+	}
+
+	for y := int32(0); y < int32(screenHeight); y += snakeSize {
+		rl.DrawLine(0, y, int32(screenWidth), y, color)
+	}
+}
+
+func (g *Game) DrawBodies() {
+	if len(g.Snake.Bodies) > 0 {
+		for k := 0; k < len(g.Snake.Bodies); k++ {
+			rl.DrawRectangle(int32(g.Snake.Bodies[k].rectangle.X), int32(g.Snake.Bodies[k].rectangle.Y), snakeSize, snakeSize, green)
+
+		}
+	}
+}
+
+func (g *Game) DrawFruits() {
+	if len(g.Foods)-1 >= 0 && g.Foods[len(g.Foods)-1].Status {
+		fruit := rl.NewRectangle(g.Foods[len(g.Foods)-1].Shape.X, g.Foods[len(g.Foods)-1].Shape.Y, snakeSize, snakeSize)
+		rl.DrawRectangle(int32(fruit.X), int32(fruit.Y), int32(fruit.Width), int32(fruit.Height), rl.White)
+	}
 }
