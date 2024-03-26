@@ -46,11 +46,17 @@ type Food struct {
 	Status bool
 }
 type Game struct {
-	GameOver bool
-	Score    int
-	Snake    Snake
-	Foods    []Food
-	Frames   int32
+	GameOver  bool
+	Score     int
+	Snake     Snake
+	Foods     []Food
+	Frames    int32
+	Obstacles []Obstacle
+}
+
+type Obstacle struct {
+	Shape  rl.Rectangle
+	Status bool
 }
 
 func main() {
@@ -75,10 +81,10 @@ func (g *Game) Update() {
 		g.ControlsHandler()
 		g.Movement()
 		g.BodyXHeadCollision()
+		g.ObstacleMechanics()
 
 		g.WallCollisionValidation()
 		g.FoodCollision()
-
 		g.Frames++
 
 	} else {
@@ -98,14 +104,16 @@ func (g *Game) Draw() {
 	rl.DrawRectangle(int32(g.Snake.Head.X), int32(g.Snake.Head.Y), snakeSize, snakeSize, purple)
 
 	DrawGrid()
+
 	g.DrawBodies()
 	g.DrawFruits()
-
+	g.DrawObstacles()
 	rl.EndDrawing()
 }
 
 func (g *Game) Init() {
 	g.Snake = Snake{Head: rl.NewRectangle(screenWidth/2, screenHeight/2, snakeSize, snakeSize)}
+
 }
 
 func (g *Game) Pause() {
@@ -179,7 +187,6 @@ func (g *Game) SpawnFood() {
 }
 
 func (g *Game) FoodCollision() {
-
 	if len(g.Foods) == 0 {
 		g.SpawnFood()
 	}
@@ -248,5 +255,27 @@ func (g *Game) DrawFruits() {
 	if len(g.Foods)-1 >= 0 && g.Foods[len(g.Foods)-1].Status {
 		fruit := rl.NewRectangle(g.Foods[len(g.Foods)-1].Shape.X, g.Foods[len(g.Foods)-1].Shape.Y, snakeSize, snakeSize)
 		rl.DrawRectangle(int32(fruit.X), int32(fruit.Y), int32(fruit.Width), int32(fruit.Height), rl.White)
+	}
+}
+
+func (g *Game) GenerateObstacle() {
+	coordinates := getRandomPosition()
+	obstacle := rl.NewRectangle(coordinates.X, coordinates.Y, snakeSize*2, snakeSize*2)
+	g.Obstacles = append(g.Obstacles, Obstacle{obstacle, true})
+}
+
+func (g *Game) ObstacleMechanics() {
+	for len(g.Obstacles) < 4 {
+		fmt.Println(g.Obstacles)
+		g.GenerateObstacle()
+	}
+
+}
+
+func (g *Game) DrawObstacles() {
+	if len(g.Obstacles) == 4 {
+		for l := len(g.Obstacles) - 1; l >= 0; l-- {
+			rl.DrawRectangleRec(g.Obstacles[l].Shape, gray)
+		}
 	}
 }
