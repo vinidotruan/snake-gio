@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	screenWidth  = 800
-	screenHeight = 800
+	screenWidth  = 1080
+	screenHeight = 1080
 	speed        = 20
 	snakeSize    = 20
 	screenOffset = 80
@@ -43,11 +43,12 @@ type Body struct {
 
 type Food struct {
 	Shape  rl.Rectangle
+	Point  int32
 	Status bool
 }
 type Game struct {
 	GameOver  bool
-	Score     int
+	Score     int32
 	Snake     Snake
 	Foods     []Food
 	Frames    int32
@@ -81,7 +82,7 @@ func (g *Game) Update() {
 		g.ControlsHandler()
 		g.Movement()
 		g.BodyXHeadCollision()
-		g.ObstacleMechanics()
+		//g.ObstacleMechanics()
 
 		g.WallCollisionValidation()
 		g.FoodCollision()
@@ -112,7 +113,7 @@ func (g *Game) Draw() {
 }
 
 func (g *Game) Init() {
-	g.Snake = Snake{Head: rl.NewRectangle(screenWidth/2, screenHeight/2, snakeSize, snakeSize)}
+	g.Snake = Snake{Head: rl.NewRectangle(screenWidth/2, finalY-snakeSize, snakeSize, snakeSize)}
 
 }
 
@@ -174,7 +175,7 @@ func (g *Game) BodyXHeadCollision() {
 
 func (g *Game) WallCollisionValidation() {
 	if (g.Snake.Head.X+speed > finalX || g.Snake.Head.X-speed < initialX) ||
-		(g.Snake.Head.Y+speed > finalY || g.Snake.Head.Y < initialY) {
+		(g.Snake.Head.Y+speed > finalY || g.Snake.Head.Y-speed < initialY) {
 		g.GameOver = true
 	}
 
@@ -182,7 +183,7 @@ func (g *Game) WallCollisionValidation() {
 
 func (g *Game) SpawnFood() {
 	position := getRandomPosition()
-	food := Food{Shape: rl.NewRectangle(position.X, position.Y, snakeSize, snakeSize), Status: true}
+	food := Food{Shape: rl.NewRectangle(position.X, position.Y, snakeSize, snakeSize), Status: true, Point: 5}
 	g.Foods = append(g.Foods, food)
 }
 
@@ -192,7 +193,7 @@ func (g *Game) FoodCollision() {
 	}
 	if rl.CheckCollisionRecs(g.Foods[len(g.Foods)-1].Shape, g.Snake.Head) && g.Foods[len(g.Foods)-1].Status {
 		g.Foods[len(g.Foods)-1].Status = false
-		g.Score += 5
+		g.Score += g.Foods[len(g.Foods)-1].Point
 
 		x, y := func() (float32, float32) {
 			if len(g.Snake.Bodies) > 0 {
