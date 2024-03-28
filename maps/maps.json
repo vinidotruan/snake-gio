@@ -1,6 +1,12 @@
 [
-   {
+
+  {
     "goal": 25,
+    "time": 30,
+    "obstacles": []
+  },
+  {
+    "goal": 30,
     "time": 3,
     "obstacles": [{
       "Shape": {
@@ -11,11 +17,5 @@
       },
       "Status": false
     }]
-  },
-  {
-    "goal": 5,
-    "time": 3,
-    "obstacles": []
   }
-
 ]

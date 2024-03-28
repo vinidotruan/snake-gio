@@ -37,6 +37,7 @@ var (
 	shouldMove      = true
 	goingToNextMap  = false
 	midPosition     = rl.NewVector2(screenWidth/2, screenHeight/2)
+	game            Game
 )
 
 type Snake struct {
@@ -87,9 +88,26 @@ func loadMap() {
 		panic(err)
 	}
 }
+
 func getRandomPosition() rl.Vector2 {
 	x := float32(rl.GetRandomValue(initialX, finalX) / snakeSize * snakeSize)
 	y := float32(rl.GetRandomValue(initialY, finalY) / snakeSize * snakeSize)
+
+	if x == game.Snake.Head.X && y == game.Snake.Head.Y {
+		return getRandomPosition()
+	}
+
+	for _, bodies := range game.Snake.Bodies {
+		if bodies.rectangle.X == x && bodies.rectangle.Y == y {
+			return getRandomPosition()
+		}
+	}
+
+	for _, obstacles := range game.Obstacles {
+		if obstacles.Shape.X == x && obstacles.Shape.Y == y {
+			return getRandomPosition()
+		}
+	}
 
 	return rl.NewVector2(x, y)
 }
@@ -121,10 +139,14 @@ func (g *Game) Update() {
 			if g.Win() {
 				g.NextPhase()
 			}
-			g.Lose()
+
+			if g.Lose() {
+				g.GameOver = true
+			}
+
 			g.Movement()
 			g.BodyXHeadCollision()
-
+			g.ObstaclesCollision()
 			g.WallCollisionValidation()
 			g.FoodCollision()
 		}
@@ -234,6 +256,14 @@ func (g *Game) WallCollisionValidation() {
 		g.GameOver = true
 	}
 
+}
+
+func (g *Game) ObstaclesCollision() {
+	for _, obstacle := range g.Obstacles {
+		if rl.CheckCollisionRecs(g.Snake.Head, obstacle.Shape) {
+			g.GameOver = true
+		}
+	}
 }
 
 func (g *Game) SpawnFood() {
