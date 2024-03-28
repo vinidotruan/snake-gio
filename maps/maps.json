@@ -1,13 +1,13 @@
 [
 
   {
-    "goal": 25,
-    "time": 30,
+    "goal": 10,
+    "time": 15,
     "obstacles": []
   },
   {
     "goal": 30,
-    "time": 3,
+    "time": 30,
     "obstacles": [{
       "Shape": {
         "X": 420,

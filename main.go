@@ -184,10 +184,9 @@ func (g *Game) Draw() {
 
 func (g *Game) Init() {
 	g.Obstacles = []Obstacle{}
-	g.Snake = Snake{Head: rl.NewRectangle(screenWidth/2, finalY-snakeSize, snakeSize, snakeSize)}
+	g.Snake = Snake{Head: rl.NewRectangle(screenWidth/2, finalY-snakeSize, snakeSize, snakeSize), Speed: rl.Vector2{X: speed, Y: 0}}
 	currentMap = mapList[currentMapIndex]
 	g.LoadMapObstacles()
-	shouldMove = true
 }
 
 func (g *Game) Pause() {
@@ -365,18 +364,21 @@ func (g *Game) NextPhase() {
 	g.Reset()
 	g.Init()
 	DrawNewMapTimer()
-
 }
 
-func ShowCounter() {
+func InitPhaseCounter() {
 	if time < 3 {
 		rl.DrawText(fmt.Sprintf("%d", time), int32(midPosition.X), int32(midPosition.Y), 100, purple)
+	} else {
+		shouldMove = true
+
 	}
+
 }
 
 func DrawNewMapTimer() {
 	if goingToNextMap {
-		ShowCounter()
+		InitPhaseCounter()
 	}
 }
 
