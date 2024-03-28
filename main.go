@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	rl "github.com/gen2brain/raylib-go/raylib"
+	"os"
 	"strings"
 )
 
@@ -21,14 +23,18 @@ const (
 )
 
 var (
-	pastime     float32
-	direction   string
-	image       *rl.Image
-	headTexture rl.Texture2D
-	purple      = rl.NewColor(102, 102, 204, 255)
-	green       = rl.NewColor(153, 204, 102, 255)
-	greenDark   = rl.NewColor(102, 153, 153, 255)
-	gray        = rl.NewColor(204, 204, 204, 255)
+	time            int
+	direction       string
+	purple          = rl.NewColor(102, 102, 204, 255)
+	green           = rl.NewColor(153, 204, 102, 255)
+	greenDark       = rl.NewColor(102, 153, 153, 255)
+	gray            = rl.NewColor(204, 204, 204, 255)
+	mapList         []Map
+	currentMap      Map
+	currentMapIndex = 0
+	shouldMove      = true
+	goingToNextMap  = false
+	midPosition     = rl.NewVector2(screenWidth/2, screenHeight/2)
 )
 
 type Snake struct {
@@ -48,6 +54,7 @@ type Food struct {
 }
 type Game struct {
 	GameOver  bool
+	Paused    bool
 	Score     int32
 	Snake     Snake
 	Foods     []Food
@@ -60,7 +67,32 @@ type Obstacle struct {
 	Status bool
 }
 
+type Map struct {
+	Goal      int
+	Time      int
+	Obstacles []Obstacle
+}
+
+func loadMap() {
+	content, err := os.ReadFile("./maps/maps.json")
+
+	if err != nil {
+		panic(err)
+	}
+
+	err = json.Unmarshal(content, &mapList)
+	if err != nil {
+		panic(err)
+	}
+}
+func getRandomPosition() rl.Vector2 {
+	x := float32(rl.GetRandomValue(initialX, finalX) / snakeSize * snakeSize)
+	y := float32(rl.GetRandomValue(initialY, finalY) / snakeSize * snakeSize)
+
+	return rl.NewVector2(x, y)
+}
 func main() {
+	loadMap()
 	game := Game{GameOver: false}
 	game.Init()
 
@@ -75,17 +107,25 @@ func main() {
 }
 
 func (g *Game) Update() {
-	rl.DrawText(fmt.Sprint(direction), screenHeight/2, 0, 20, rl.White)
-	rl.DrawText(fmt.Sprint(g.Score), screenHeight/4, 0, 20, rl.White)
+
+	if g.Frames%60 == 0 {
+		time++
+	}
 
 	if !g.GameOver {
 		g.ControlsHandler()
-		g.Movement()
-		g.BodyXHeadCollision()
-		//g.ObstacleMechanics()
 
-		g.WallCollisionValidation()
-		g.FoodCollision()
+		if shouldMove {
+			if g.Win() {
+				g.NextPhase()
+			}
+			g.Lose()
+			g.Movement()
+			g.BodyXHeadCollision()
+
+			g.WallCollisionValidation()
+			g.FoodCollision()
+		}
 		g.Frames++
 
 	} else {
@@ -102,8 +142,13 @@ func (g *Game) Update() {
 func (g *Game) Draw() {
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.NewColor(40, 42, 54, 255))
+
+	rl.DrawText(fmt.Sprintf("Time: %d", time), screenHeight/2, 0, 20, rl.White)
+	rl.DrawText(fmt.Sprint(g.Score), screenHeight/4, 0, 20, rl.White)
+	rl.DrawText(fmt.Sprintf("Goal: %d", currentMap.Goal), screenHeight/4*3, 0, 20, rl.White)
 	rl.DrawRectangle(int32(g.Snake.Head.X), int32(g.Snake.Head.Y), snakeSize, snakeSize, purple)
 
+	DrawNewMapTimer()
 	DrawGrid()
 
 	g.DrawBodies()
@@ -113,12 +158,17 @@ func (g *Game) Draw() {
 }
 
 func (g *Game) Init() {
+	g.Obstacles = []Obstacle{}
 	g.Snake = Snake{Head: rl.NewRectangle(screenWidth/2, finalY-snakeSize, snakeSize, snakeSize)}
-
+	currentMap = mapList[currentMapIndex]
+	g.LoadMapObstacles()
+	g.Paused = false
+	shouldMove = true
 }
 
 func (g *Game) Pause() {
-	g.Snake.Speed = rl.NewVector2(0, 0)
+	shouldMove = !shouldMove
+	g.Paused = !g.Paused
 }
 
 func (g *Game) ControlsHandler() {
@@ -147,21 +197,24 @@ func (g *Game) ControlsHandler() {
 }
 
 func (g *Game) Movement() {
-	if g.Frames%3 == 0 {
-		for i := len(g.Snake.Bodies) - 1; i > 0; i-- {
-			g.Snake.Bodies[i].rectangle.X = g.Snake.Bodies[i-1].rectangle.X
-			g.Snake.Bodies[i].rectangle.Y = g.Snake.Bodies[i-1].rectangle.Y
-		}
+	if shouldMove == true {
+		if g.Frames%3 == 0 {
+			for i := len(g.Snake.Bodies) - 1; i > 0; i-- {
+				g.Snake.Bodies[i].rectangle.X = g.Snake.Bodies[i-1].rectangle.X
+				g.Snake.Bodies[i].rectangle.Y = g.Snake.Bodies[i-1].rectangle.Y
+			}
 
-		if len(g.Snake.Bodies) > 0 {
-			g.Snake.Bodies[0].rectangle.X = g.Snake.Head.X
-			g.Snake.Bodies[0].rectangle.Y = g.Snake.Head.Y
-		}
+			if len(g.Snake.Bodies) > 0 {
+				g.Snake.Bodies[0].rectangle.X = g.Snake.Head.X
+				g.Snake.Bodies[0].rectangle.Y = g.Snake.Head.Y
+			}
 
-		// move snake head
-		g.Snake.Head.X += g.Snake.Speed.X
-		g.Snake.Head.Y += g.Snake.Speed.Y
+			// move snake head
+			g.Snake.Head.X += g.Snake.Speed.X
+			g.Snake.Head.Y += g.Snake.Speed.Y
+		}
 	}
+
 }
 
 func (g *Game) BodyXHeadCollision() {
@@ -174,8 +227,8 @@ func (g *Game) BodyXHeadCollision() {
 }
 
 func (g *Game) WallCollisionValidation() {
-	if (g.Snake.Head.X+speed > finalX || g.Snake.Head.X-speed < initialX) ||
-		(g.Snake.Head.Y+speed > finalY || g.Snake.Head.Y-speed < initialY) {
+	if (g.Snake.Head.X >= finalX || g.Snake.Head.X < initialX) ||
+		(g.Snake.Head.Y >= finalY || g.Snake.Head.Y < initialY) {
 		g.GameOver = true
 	}
 
@@ -219,15 +272,7 @@ func (g *Game) FoodCollision() {
 	}
 }
 
-func getRandomPosition() rl.Vector2 {
-	x := float32(rl.GetRandomValue(initialX, finalX) / snakeSize * snakeSize)
-	y := float32(rl.GetRandomValue(initialY, finalY) / snakeSize * snakeSize)
-
-	return rl.NewVector2(x, y)
-}
-
 func DrawGrid() {
-
 	rl.DrawLine(initialX, initialY, initialX, finalY, greenDark)
 	rl.DrawLine(finalX, initialY, finalX, finalY, greenDark)
 
@@ -259,24 +304,60 @@ func (g *Game) DrawFruits() {
 	}
 }
 
-func (g *Game) GenerateObstacle() {
-	coordinates := getRandomPosition()
-	obstacle := rl.NewRectangle(coordinates.X, coordinates.Y, snakeSize*2, snakeSize*2)
-	g.Obstacles = append(g.Obstacles, Obstacle{obstacle, true})
-}
-
-func (g *Game) ObstacleMechanics() {
-	for len(g.Obstacles) < 4 {
-		fmt.Println(g.Obstacles)
-		g.GenerateObstacle()
-	}
-
-}
-
 func (g *Game) DrawObstacles() {
-	if len(g.Obstacles) == 4 {
-		for l := len(g.Obstacles) - 1; l >= 0; l-- {
-			rl.DrawRectangleRec(g.Obstacles[l].Shape, gray)
+	for l := 0; l < len(g.Obstacles); l++ {
+		rl.DrawRectangleRec(g.Obstacles[l].Shape, gray)
+	}
+}
+
+func (g *Game) Win() bool {
+	return int(g.Score) == currentMap.Goal
+}
+
+func (g *Game) Lose() bool {
+	return int(g.Score) < currentMap.Goal && time >= currentMap.Time
+}
+
+func (g *Game) Reset() {
+	time = 0
+	g.Snake.Head = rl.NewRectangle(screenWidth/2, finalY-snakeSize, snakeSize, snakeSize)
+	g.Score = 0
+	g.Snake.Bodies = []Body{}
+	shouldMove = false
+	goingToNextMap = true
+	g.Seconds()
+}
+
+func (g *Game) NextPhase() {
+	currentMapIndex++
+	g.Reset()
+	g.Init()
+	DrawNewMapTimer()
+
+}
+
+func ShowCounter() {
+	if time < 3 {
+		rl.DrawText(fmt.Sprintf("%d", time), int32(midPosition.X), int32(midPosition.Y), 100, purple)
+	}
+}
+
+func DrawNewMapTimer() {
+	if goingToNextMap {
+		ShowCounter()
+	}
+}
+
+func (g *Game) Seconds() {
+	if g.Frames%60 == 0 {
+		time++
+	}
+}
+
+func (g *Game) LoadMapObstacles() {
+	if len(currentMap.Obstacles) > 0 {
+		for _, obstacle := range currentMap.Obstacles {
+			g.Obstacles = append(g.Obstacles, Obstacle{Shape: obstacle.Shape, Status: true})
 		}
 	}
 }

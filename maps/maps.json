@@ -1,0 +1,21 @@
+[
+   {
+    "goal": 25,
+    "time": 3,
+    "obstacles": [{
+      "Shape": {
+        "X": 420,
+        "Y": 420,
+        "Width": 80,
+        "Height": 80
+      },
+      "Status": false
+    }]
+  },
+  {
+    "goal": 5,
+    "time": 3,
+    "obstacles": []
+  }
+
+]
