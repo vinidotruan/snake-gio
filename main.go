@@ -9,17 +9,19 @@ import (
 )
 
 const (
-	screenWidth  = 1080
-	screenHeight = 1080
-	speed        = 20
-	snakeSize    = 20
-	screenOffset = 80
-
-	initialX  = screenOffset
-	initialY  = screenOffset
-	finalX    = screenWidth - screenOffset
-	finalY    = screenHeight - screenOffset
-	frameRate = 60
+	screenWidth     = 1080
+	screenHeight    = 1080
+	speed           = 20
+	snakeSize       = 20
+	screenOffset    = 80
+	initialX        = screenOffset
+	initialY        = screenOffset
+	finalX          = screenWidth - screenOffset
+	finalY          = screenHeight - screenOffset
+	frameRate       = 60
+	pausedGUIWidth  = 400
+	pausedGUIHeight = 240
+	defaultFontSize = 20
 )
 
 var (
@@ -108,7 +110,7 @@ func main() {
 
 func (g *Game) Update() {
 
-	if g.Frames%60 == 0 {
+	if g.Frames%60 == 0 && !g.Paused {
 		time++
 	}
 
@@ -154,6 +156,7 @@ func (g *Game) Draw() {
 	g.DrawBodies()
 	g.DrawFruits()
 	g.DrawObstacles()
+	g.DrawPausedGUI()
 	rl.EndDrawing()
 }
 
@@ -162,7 +165,6 @@ func (g *Game) Init() {
 	g.Snake = Snake{Head: rl.NewRectangle(screenWidth/2, finalY-snakeSize, snakeSize, snakeSize)}
 	currentMap = mapList[currentMapIndex]
 	g.LoadMapObstacles()
-	g.Paused = false
 	shouldMove = true
 }
 
@@ -360,4 +362,29 @@ func (g *Game) LoadMapObstacles() {
 			g.Obstacles = append(g.Obstacles, Obstacle{Shape: obstacle.Shape, Status: true})
 		}
 	}
+}
+
+func (g *Game) DrawPausedGUI() {
+	if !g.Paused {
+		return
+	}
+
+	content := "Continue: P"
+	contentLength := rl.MeasureTextEx(rl.GetFontDefault(), content, defaultFontSize, 1)
+	rectanglePosition := rl.NewVector2(midPosition.X-(pausedGUIWidth/2), midPosition.Y-(pausedGUIHeight/2))
+
+	rl.DrawRectangle(0, 0, screenWidth, screenHeight, rl.NewColor(0, 0, 0, 100))
+	rl.DrawRectangle(
+		int32(rectanglePosition.X),
+		int32(rectanglePosition.Y),
+		pausedGUIWidth,
+		pausedGUIHeight,
+		purple,
+	)
+
+	rl.DrawText(
+		content,
+		int32(rectanglePosition.X)+pausedGUIWidth/2-(int32(contentLength.X)/2),
+		int32(rectanglePosition.Y)+pausedGUIHeight/2-(int32(contentLength.Y)/2),
+		defaultFontSize, gray)
 }
