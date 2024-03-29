@@ -31,6 +31,7 @@ var (
 	green           = rl.NewColor(153, 204, 102, 255)
 	greenDark       = rl.NewColor(102, 153, 153, 255)
 	gray            = rl.NewColor(204, 204, 204, 255)
+	grayDark        = rl.NewColor(40, 42, 54, 255)
 	mapList         []Map
 	currentMap      Map
 	currentMapIndex = 0
@@ -63,6 +64,7 @@ type Game struct {
 	Foods     []Food
 	Frames    int32
 	Obstacles []Obstacle
+	Gaming    bool
 }
 
 type Obstacle struct {
@@ -113,8 +115,7 @@ func getRandomPosition() rl.Vector2 {
 }
 func main() {
 	loadMap()
-	game := Game{GameOver: false}
-	game.Init()
+	game := Game{GameOver: false, Gaming: false}
 
 	rl.InitWindow(screenWidth, screenHeight, "dotsnake")
 	defer rl.CloseWindow()
@@ -127,37 +128,37 @@ func main() {
 }
 
 func (g *Game) Update() {
+	g.ControlsHandler()
 
-	if g.Frames%60 == 0 && !g.Paused {
-		time++
-	}
-
-	if !g.GameOver {
-		g.ControlsHandler()
-
-		if shouldMove {
-			if g.Win() {
-				g.NextPhase()
-			}
-
-			if g.Lose() {
-				g.GameOver = true
-			}
-
-			g.Movement()
-			g.BodyXHeadCollision()
-			g.ObstaclesCollision()
-			g.WallCollisionValidation()
-			g.FoodCollision()
+	if g.Gaming {
+		if g.Frames%60 == 0 && !g.Paused && g.Gaming {
+			time++
 		}
-		g.Frames++
 
-	} else {
-		rl.DrawText("Game Over", screenWidth/2, screenHeight/2, 20, rl.White)
+		if !g.GameOver {
 
-		if rl.IsKeyPressed(rl.KeyR) {
-			g.Init()
-			g.GameOver = false
+			if shouldMove {
+				if g.Win() {
+					g.NextPhase()
+				}
+
+				if g.Lose() {
+					g.GameOver = true
+				}
+
+				g.Movement()
+				g.BodyXHeadCollision()
+				g.ObstaclesCollision()
+				g.WallCollisionValidation()
+				g.FoodCollision()
+			}
+			g.Frames++
+		} else {
+			rl.DrawText("Game Over", screenWidth/2, screenHeight/2, 20, rl.White)
+
+			if rl.IsKeyPressed(rl.KeyR) {
+				g.Reset()
+			}
 		}
 	}
 
@@ -167,22 +168,28 @@ func (g *Game) Draw() {
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.NewColor(40, 42, 54, 255))
 
-	rl.DrawText(fmt.Sprintf("Time: %d", time), screenHeight/2, 0, 20, rl.White)
-	rl.DrawText(fmt.Sprint(g.Score), screenHeight/4, 0, 20, rl.White)
-	rl.DrawText(fmt.Sprintf("Goal: %d", currentMap.Goal), screenHeight/4*3, 0, 20, rl.White)
-	rl.DrawRectangle(int32(g.Snake.Head.X), int32(g.Snake.Head.Y), snakeSize, snakeSize, purple)
+	if g.Gaming {
+		rl.DrawText(fmt.Sprintf("Time: %d", time), screenHeight/2, 0, 20, rl.White)
+		rl.DrawText(fmt.Sprint(g.Score), screenHeight/4, 0, 20, rl.White)
+		rl.DrawText(fmt.Sprintf("Goal: %d", currentMap.Goal), screenHeight/4*3, 0, 20, rl.White)
+		rl.DrawRectangle(int32(g.Snake.Head.X), int32(g.Snake.Head.Y), snakeSize, snakeSize, purple)
 
-	DrawNewMapTimer()
-	DrawGrid()
+		DrawNewMapTimer()
+		DrawGrid()
 
-	g.DrawBodies()
-	g.DrawFruits()
-	g.DrawObstacles()
-	g.DrawPausedGUI()
+		g.DrawBodies()
+		g.DrawFruits()
+		g.DrawObstacles()
+		g.DrawPausedGUI()
+	} else {
+		DrawInitialMenu()
+	}
+
 	rl.EndDrawing()
 }
 
 func (g *Game) Init() {
+	g.Gaming = true
 	g.Obstacles = []Obstacle{}
 	g.Snake = Snake{Head: rl.NewRectangle(screenWidth/2, finalY-snakeSize, snakeSize, snakeSize), Speed: rl.Vector2{X: speed, Y: 0}}
 	currentMap = mapList[currentMapIndex]
@@ -216,6 +223,14 @@ func (g *Game) ControlsHandler() {
 	if (rl.IsKeyPressed(rl.KeyDown) || rl.IsKeyPressed(rl.KeyS)) && strings.Compare(direction, "up") != 0 {
 		g.Snake.Speed = rl.Vector2{X: 0, Y: +speed}
 		direction = "down"
+	}
+
+	if rl.IsKeyPressed(rl.KeyEnter) {
+		g.Init()
+	}
+
+	if rl.IsKeyPressed(rl.KeyEscape) {
+		os.Exit(0)
 	}
 }
 
@@ -350,6 +365,7 @@ func (g *Game) Lose() bool {
 }
 
 func (g *Game) Reset() {
+	g.GameOver = false
 	time = 0
 	g.Snake.Head = rl.NewRectangle(screenWidth/2, finalY-snakeSize, snakeSize, snakeSize)
 	g.Score = 0
@@ -419,4 +435,17 @@ func (g *Game) DrawPausedGUI() {
 		int32(rectanglePosition.X)+pausedGUIWidth/2-(int32(contentLength.X)/2),
 		int32(rectanglePosition.Y)+pausedGUIHeight/2-(int32(contentLength.Y)/2),
 		defaultFontSize, gray)
+}
+
+func DrawInitialMenu() {
+	rl.ClearBackground(grayDark)
+	containerOffset := 10
+	containerSize := 400
+	subcontainerSize := containerSize - 20
+	container := rl.NewRectangle(midPosition.X, midPosition.Y, float32(containerSize), float32(containerSize))
+	subcontainer := rl.NewRectangle(container.X+float32(containerOffset), container.Y+float32(containerOffset), float32(subcontainerSize), float32(subcontainerSize))
+	rl.DrawRectangleRec(container, purple)
+	rl.DrawRectangleRec(subcontainer, grayDark)
+	rl.DrawText("Start: Enter", int32(midPosition.X)-100, int32(midPosition.Y)+100, 20, rl.White)
+	rl.DrawText("Quit: ESC", int32(midPosition.X)-100, int32(midPosition.Y)+120, 20, rl.White)
 }
