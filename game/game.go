@@ -118,12 +118,12 @@ func (g *Game) Draw() {
 		rl.DrawText(fmt.Sprintf("Time: %d", time), utils.ScreenHeight/2, 0, 20, rl.White)
 		rl.DrawText(fmt.Sprint(g.score), utils.ScreenHeight/4, 0, 20, rl.White)
 		rl.DrawText(fmt.Sprintf("Goal: %d", currentMap.Goal), utils.ScreenHeight/4*3, 0, 20, rl.White)
-		rl.DrawRectangle(int32(g.snake.head.X), int32(g.snake.head.Y), snake.Size, snake.Size, utils.Purple)
+		rl.DrawRectangle(int32(g.snake.Head().X), int32(g.snake.Head().Y), snake.Size, snake.Size, utils.Purple)
 
 		DrawNewMapTimer()
 		DrawGrid()
 
-		g.snake.DrawBodies(len(g.snake.Bodies))
+		g.snake.DrawBodies(len(g.snake.Bodies()))
 		food.DrawFruits(g.foods)
 		g.DrawObstacles()
 		g.DrawPausedGUI()
@@ -137,7 +137,10 @@ func (g *Game) Draw() {
 func (g *Game) Init() {
 	g.Gaming = true
 	g.obstacles = []utils.Obstacle{}
-	g.snake = snake.Snake{head: rl.NewRectangle(utils.ScreenWidth/2, utils.FinalY-snake.Size, snake.Size, snake.Size), Speed: rl.Vector2{X: utils.Speed, Y: 0}}
+	g.snake = snake.Snake{ 
+    Speed: rl.Vector2{X: utils.Speed, Y: 0},
+  }
+  g.snake.NewHead(rl.NewRectangle(utils.ScreenWidth/2, utils.FinalY-snake.Size, snake.Size, snake.Size))
 	currentMap = utils.MapList[currentMapIndex]
 	g.LoadMapObstacles()
 }
@@ -208,9 +211,8 @@ func (g *Game) Lose() bool {
 func (g *Game) Reset() {
 	g.GameOver = false
 	time = 0
-	g.snake.head = rl.NewRectangle(utils.ScreenWidth/2, utils.FinalY-snake.Size, snake.Size, snake.Size)
+	g.snake.Reset(rl.NewRectangle(utils.ScreenWidth/2, utils.FinalY-snake.Size, snake.Size, snake.Size))
 	g.score = 0
-	g.snake.Bodies = []snake.Body{}
 	shouldMove = false
 	goingToNextMap = true
 	g.Seconds()

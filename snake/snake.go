@@ -101,3 +101,16 @@ func (b Body) Rectangle() rl.Rectangle {
 func (b *Body) NewBody(rectangle rl.Rectangle) {
 	b.rectangle = rectangle
 }
+
+func (s *Snake) NewHead(rec rl.Rectangle) {
+  s.head = rec
+}
+
+func (s *Snake) Reset(rec rl.Rectangle) {
+  s.NewHead(rec)
+  s.ResetBodies()
+}
+
+func (s *Snake) ResetBodies() {
+  s.bodies = []Body{}
+}
