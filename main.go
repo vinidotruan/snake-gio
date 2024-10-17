@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	screenWidth     = 1080
-	screenHeight    = 1080
+	screenWidth     = 900 
+	screenHeight    = 600
 	speed           = 20
 	snakeSize       = 20
 	screenOffset    = 80
@@ -32,6 +32,9 @@ var (
 	greenDark       = rl.NewColor(102, 153, 153, 255)
 	gray            = rl.NewColor(204, 204, 204, 255)
 	grayDark        = rl.NewColor(40, 42, 54, 255)
+  red = rl.NewColor(225, 80, 72, 255)
+  background = rl.NewColor(40, 42, 54, 255)
+  editingBackground = rl.NewColor(131, 143, 206, 255)
 	mapList         []Map
 	currentMap      Map
 	currentMapIndex = 0
@@ -39,6 +42,7 @@ var (
 	goingToNextMap  = false
 	midPosition     = rl.NewVector2(screenWidth/2, screenHeight/2)
 	game            Game
+  isEditing = false
 )
 
 type Snake struct {
@@ -113,6 +117,7 @@ func getRandomPosition() rl.Vector2 {
 
 	return rl.NewVector2(x, y)
 }
+
 func main() {
 	loadMap()
 	game := Game{GameOver: false, Gaming: false}
@@ -165,10 +170,17 @@ func (g *Game) Update() {
 }
 
 func (g *Game) Draw() {
-	rl.BeginDrawing()
-	rl.ClearBackground(rl.NewColor(40, 42, 54, 255))
+	rl.BeginDrawing() 
+  var color rl.Color
 
-	if g.Gaming {
+  if isEditing {
+    color = editingBackground
+  } else {
+    color = background
+  }
+  rl.ClearBackground(color)
+
+	if g.Gaming && !isEditing {
 		rl.DrawText(fmt.Sprintf("Time: %d", time), screenHeight/2, 0, 20, rl.White)
 		rl.DrawText(fmt.Sprint(g.Score), screenHeight/4, 0, 20, rl.White)
 		rl.DrawText(fmt.Sprintf("Goal: %d", currentMap.Goal), screenHeight/4*3, 0, 20, rl.White)
@@ -181,11 +193,21 @@ func (g *Game) Draw() {
 		g.DrawFruits()
 		g.DrawObstacles()
 		g.DrawPausedGUI()
-	} else {
+	} else if isEditing {
+    DrawBlock()
+    DrawGrid()
+  } else {
 		DrawInitialMenu()
 	}
-
 	rl.EndDrawing()
+}
+
+func DrawBlock() {
+  x := int32(rl.GetMouseX()/snakeSize)*snakeSize
+  y := int32(rl.GetMouseY()/snakeSize)*snakeSize
+  fmt.Println("X: ", rl.GetMouseX())
+  fmt.Println("X formatado: ", x)
+  rl.DrawRectangle(x-40, y-40, 80, 80, red)
 }
 
 func (g *Game) Init() {
@@ -202,32 +224,39 @@ func (g *Game) Pause() {
 }
 
 func (g *Game) ControlsHandler() {
-	if rl.IsKeyPressed(rl.KeyP) {
-		g.Pause()
-	}
-	if (rl.IsKeyPressed(rl.KeyRight) || rl.IsKeyPressed(rl.KeyD)) && strings.Compare(direction, "left") != 0 {
-		g.Snake.Speed = rl.Vector2{X: speed, Y: 0}
-		direction = "right"
-	}
+  if !isEditing {
+    if rl.IsKeyPressed(rl.KeyP) {
+      g.Pause()
+    }
 
-	if (rl.IsKeyPressed(rl.KeyLeft) || rl.IsKeyPressed(rl.KeyA)) && strings.Compare(direction, "right") != 0 {
-		g.Snake.Speed = rl.Vector2{X: -speed, Y: 0}
-		direction = "left"
-	}
+    if (rl.IsKeyPressed(rl.KeyRight) || rl.IsKeyPressed(rl.KeyD)) && strings.Compare(direction, "left") != 0 {
+      g.Snake.Speed = rl.Vector2{X: speed, Y: 0}
+      direction = "right"
+    }
 
-	if (rl.IsKeyPressed(rl.KeyUp) || rl.IsKeyPressed(rl.KeyW)) && strings.Compare(direction, "down") != 0 {
-		g.Snake.Speed = rl.Vector2{X: 0, Y: -speed}
-		direction = "up"
-	}
+    if (rl.IsKeyPressed(rl.KeyLeft) || rl.IsKeyPressed(rl.KeyA)) && strings.Compare(direction, "right") != 0 {
+      g.Snake.Speed = rl.Vector2{X: -speed, Y: 0}
+      direction = "left"
+    }
 
-	if (rl.IsKeyPressed(rl.KeyDown) || rl.IsKeyPressed(rl.KeyS)) && strings.Compare(direction, "up") != 0 {
-		g.Snake.Speed = rl.Vector2{X: 0, Y: +speed}
-		direction = "down"
-	}
+    if (rl.IsKeyPressed(rl.KeyUp) || rl.IsKeyPressed(rl.KeyW)) && strings.Compare(direction, "down") != 0 {
+      g.Snake.Speed = rl.Vector2{X: 0, Y: -speed}
+      direction = "up"
+    }
 
-	if rl.IsKeyPressed(rl.KeyEnter) {
-		g.Init()
-	}
+    if (rl.IsKeyPressed(rl.KeyDown) || rl.IsKeyPressed(rl.KeyS)) && strings.Compare(direction, "up") != 0 {
+      g.Snake.Speed = rl.Vector2{X: 0, Y: +speed}
+      direction = "down"
+    }
+
+    if rl.IsKeyPressed(rl.KeyEnter) {
+      g.Init()
+    }
+  }
+
+  if rl.IsKeyPressed(rl.KeyE) {
+    isEditing = !isEditing;
+  }
 
 	if rl.IsKeyPressed(rl.KeyEscape) {
 		os.Exit(0)
@@ -319,19 +348,30 @@ func (g *Game) FoodCollision() {
 }
 
 func DrawGrid() {
-	rl.DrawLine(initialX, initialY, initialX, finalY, greenDark)
-	rl.DrawLine(finalX, initialY, finalX, finalY, greenDark)
+  var color rl.Color
+  var limits rl.Color
+  if isEditing {
+    limits = red
+    color = rl.NewColor(37, 35, 43, 255)
+  } else {
+    limits = greenDark
+    color = rl.NewColor(204, 204, 204, 20)
+  }
 
-	rl.DrawLine(initialX, initialY, finalX, initialY, greenDark)
-	rl.DrawLine(initialX, finalY, finalX, finalY, greenDark)
-	color := rl.NewColor(204, 204, 204, 20)
-	for x := int32(0); x < int32(screenWidth); x += snakeSize {
+  for x := int32(0); x < int32(screenWidth); x += snakeSize {
 		rl.DrawLine(x, 0, x, int32(screenHeight), color)
 	}
 
 	for y := int32(0); y < int32(screenHeight); y += snakeSize {
 		rl.DrawLine(0, y, int32(screenWidth), y, color)
 	}
+
+
+  rl.DrawLine(initialX, initialY, initialX, finalY, limits)
+	rl.DrawLine(finalX, initialY, finalX, finalY, limits)
+
+	rl.DrawLine(initialX, initialY, finalX, initialY, limits)
+	rl.DrawLine(initialX, finalY, finalX, finalY, limits)
 }
 
 func (g *Game) DrawBodies() {
