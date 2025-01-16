@@ -51,6 +51,8 @@ var (
 	countdown = 5
 	timer time.Time
 	phaseDuration int
+	inPhaseCounter = false
+	loadingTimer int
 )
 
 type Snake struct {
@@ -144,6 +146,10 @@ func (g *Game) Update() {
 	g.ControlsHandler()
 	pastTimming += float64(rl.GetFrameTime())
 
+	if inPhaseCounter {
+		loadingTimer = int(time.Since(timer).Abs().Seconds())
+	}
+
 	if g.Gaming {
 		if !g.GameOver {
 			if shouldMove {
@@ -155,7 +161,7 @@ func (g *Game) Update() {
 					g.GameOver = true
 				}
 
-				if pastTimming > 0.5 {
+				if pastTimming > 0.1 {
 					pastTimming = 0
 					g.Movement()
 				}
@@ -427,11 +433,14 @@ func (g *Game) NextPhase() {
 }
 
 func InitPhaseCounter() {
-	// if int(duration.Seconds()) < countdown {
-	// 	rl.DrawText(fmt.Sprintf("%d",int(duration.Seconds())-countdown), int32(midPosition.X), int32(midPosition.Y), 100, purple)
-	// } else {
-	// 	shouldMove = true
-	// }
+	inPhaseCounter = true
+	if loadingTimer < countdown {
+		formmatedTimmer := fmt.Sprintf("%d",int(countdown-loadingTimer))
+		rl.DrawText(formmatedTimmer, int32(midPosition.X), int32(midPosition.Y), 100, purple)
+	} else {
+		inPhaseCounter = false
+		shouldMove = true
+	}
 }
 
 func DrawNewMapTimer() {
