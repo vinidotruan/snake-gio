@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
@@ -26,7 +27,8 @@ const (
 )
 
 var (
-	time int
+	game Game
+
 	direction string
 	purple = rl.NewColor(102, 102, 204, 255)
 	green = rl.NewColor(153, 204, 102, 255)
@@ -36,15 +38,19 @@ var (
   red = rl.NewColor(225, 80, 72, 255)
   background = rl.NewColor(40, 42, 54, 255)
   editingBackground = rl.NewColor(131, 143, 206, 255)
+
 	mapList []Map
 	currentMap Map
 	currentMapIndex = 0
+
 	shouldMove = true
 	goingToNextMap = false
 	midPosition = rl.NewVector2(screenWidth/2, screenHeight/2)
-	game Game
   isEditing = false
 	pastTimming = 0.0
+	countdown = 5
+	timer time.Time
+	phaseDuration int
 )
 
 type Snake struct {
@@ -138,12 +144,7 @@ func (g *Game) Update() {
 	g.ControlsHandler()
 	pastTimming += float64(rl.GetFrameTime())
 
-
 	if g.Gaming {
-		if g.Frames%60 == 0 && !g.Paused && g.Gaming {
-			time++
-		}
-
 		if !g.GameOver {
 			if shouldMove {
 				if g.Win() {
@@ -186,7 +187,10 @@ func (g *Game) Draw() {
   rl.ClearBackground(color)
 
 	if g.Gaming && !isEditing {
-		rl.DrawText(fmt.Sprintf("Time: %d", time), screenHeight/2, 0, 20, rl.White)
+		if !g.Paused {
+			phaseDuration = int(time.Since(timer).Abs().Seconds())
+		}
+		rl.DrawText(fmt.Sprintf("Time: %d", phaseDuration), screenHeight/2, 0, 20, rl.White)
 		rl.DrawText(fmt.Sprint(g.Score), screenHeight/4, 0, 20, rl.White)
 		rl.DrawText(fmt.Sprintf("Goal: %d", currentMap.Goal), screenHeight/4*3, 0, 20, rl.White)
 		rl.DrawText(fmt.Sprintf("X: %f Y: %f", g.Snake.Head.X, g.Snake.Head.Y), 10, 10, 20, rl.White)
@@ -218,7 +222,6 @@ func DrawBlock() {
 }
 
 func (g *Game) Init() {
-	
 	g.Gaming = true
 	g.Obstacles = []Obstacle{}
 	g.Snake = Snake{
@@ -227,6 +230,7 @@ func (g *Game) Init() {
 	}
 	currentMap = mapList[currentMapIndex]
 	g.LoadMapObstacles()
+	timer = time.Now()
 }
 
 func (g *Game) Pause() {
@@ -402,19 +406,17 @@ func (g *Game) Win() bool {
 }
 
 func (g *Game) Lose() bool {
-	return int(g.Score) < currentMap.Goal && time >= currentMap.Time
+	return int(g.Score) < currentMap.Goal &&  phaseDuration >= currentMap.Time
 }
 
 func (g *Game) Reset() {
 	g.GameOver = false
-	time = 0
 	g.Snake.Head = rl.NewRectangle(columns/2*snakeSize, finalY-snakeSize, snakeSize, snakeSize)
 	g.Snake.Speed = rl.Vector2{X: 0, Y: 0}
 	g.Score = 0
 	g.Snake.Bodies = []Body{}
 	shouldMove = false
 	goingToNextMap = true
-	g.Seconds()
 }
 
 func (g *Game) NextPhase() {
@@ -425,25 +427,16 @@ func (g *Game) NextPhase() {
 }
 
 func InitPhaseCounter() {
-	if time < 3 {
-		rl.DrawText(fmt.Sprintf("%d", time), int32(midPosition.X), int32(midPosition.Y), 100, purple)
-	} else {
-		shouldMove = true
-
-	}
-
+	// if int(duration.Seconds()) < countdown {
+	// 	rl.DrawText(fmt.Sprintf("%d",int(duration.Seconds())-countdown), int32(midPosition.X), int32(midPosition.Y), 100, purple)
+	// } else {
+	// 	shouldMove = true
+	// }
 }
 
 func DrawNewMapTimer() {
 	if goingToNextMap {
 		InitPhaseCounter()
-	}
-}
-
-// TODO - usar OS timer
-func (g *Game) Seconds() {
-	if g.Frames%60 == 0 {
-		time++
 	}
 }
 
