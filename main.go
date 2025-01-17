@@ -48,8 +48,10 @@ var (
 	midPosition = rl.NewVector2(screenWidth/2, screenHeight/2)
   isEditing = false
 	pastTimming = 0.0
-	countdown = 5
+
+	countdown = 3
 	timer time.Time
+	phaseTimer time.Time
 	phaseDuration int
 	inPhaseCounter = false
 	loadingTimer int
@@ -147,7 +149,7 @@ func (g *Game) Update() {
 	pastTimming += float64(rl.GetFrameTime())
 
 	if inPhaseCounter {
-		loadingTimer = int(time.Since(timer).Abs().Seconds())
+		loadingTimer = int(time.Since(phaseTimer).Abs().Seconds())
 	}
 
 	if g.Gaming {
@@ -193,14 +195,12 @@ func (g *Game) Draw() {
   rl.ClearBackground(color)
 
 	if g.Gaming && !isEditing {
-		if !g.Paused {
+		if !g.Paused && !inPhaseCounter {
 			phaseDuration = int(time.Since(timer).Abs().Seconds())
 		}
 		rl.DrawText(fmt.Sprintf("Time: %d", phaseDuration), screenHeight/2, 0, 20, rl.White)
 		rl.DrawText(fmt.Sprint(g.Score), screenHeight/4, 0, 20, rl.White)
 		rl.DrawText(fmt.Sprintf("Goal: %d", currentMap.Goal), screenHeight/4*3, 0, 20, rl.White)
-		rl.DrawText(fmt.Sprintf("X: %f Y: %f", g.Snake.Head.X, g.Snake.Head.Y), 10, 10, 20, rl.White)
-		rl.DrawText(fmt.Sprintf("DeltaTime: %f", rl.GetFrameTime()), 50, 50, 20, rl.White)
 		rl.DrawRectangle(int32(g.Snake.Head.X), int32(g.Snake.Head.Y), snakeSize, snakeSize, purple)
 
 		DrawNewMapTimer()
@@ -427,25 +427,29 @@ func (g *Game) Reset() {
 
 func (g *Game) NextPhase() {
 	currentMapIndex++
+	phaseTimer = time.Now()
 	g.Reset()
 	g.Init()
 	DrawNewMapTimer()
 }
 
+func DrawNewMapTimer() {
+	if goingToNextMap {
+		InitPhaseCounter()
+	}
+}
+
 func InitPhaseCounter() {
 	inPhaseCounter = true
+	phaseDuration = 0.0
 	if loadingTimer < countdown {
 		formmatedTimmer := fmt.Sprintf("%d",int(countdown-loadingTimer))
 		rl.DrawText(formmatedTimmer, int32(midPosition.X), int32(midPosition.Y), 100, purple)
 	} else {
 		inPhaseCounter = false
 		shouldMove = true
-	}
-}
-
-func DrawNewMapTimer() {
-	if goingToNextMap {
-		InitPhaseCounter()
+		timer = time.Now()
+		goingToNextMap = false
 	}
 }
 
