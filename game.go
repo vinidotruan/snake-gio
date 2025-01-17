@@ -29,7 +29,7 @@ var (
 	green = rl.NewColor(153, 204, 102, 255)
 	greenDark = rl.NewColor(102, 153, 153, 255)
 	gray = rl.NewColor(204, 204, 204, 255)
-	grayDark = rl.NewColor(40, 42, 54, 255)
+	grayDark = rl.NewColor(31, 35, 53, 255)
   red = rl.NewColor(225, 80, 72, 255)
   background = rl.NewColor(40, 42, 54, 255)
   editingBackground = rl.NewColor(131, 143, 206, 255)
@@ -50,6 +50,9 @@ var (
 	phaseDuration int
 	inPhaseCounter = false
 	loadingTimer int
+
+	coeficient = 0.1
+	deltaSpeed = 0.005
 )
 
 type Snake struct {
@@ -239,7 +242,7 @@ func (g *Game) FoodCollision() {
 
 		g.Snake.Bodies = append(g.Snake.Bodies, Body{rectangle: rl.NewRectangle(x, y, snakeSize, snakeSize)})
 		g.SpawnFood()
-
+		coeficient -= deltaSpeed
 	}
 }
 
@@ -324,7 +327,7 @@ func (g *Game) Update() {
 					g.GameOver = true
 				}
 
-				if pastTimming > 0.1 {
+				if pastTimming > coeficient {
 					pastTimming = 0
 					g.Movement()
 				}
@@ -362,6 +365,7 @@ func (g *Game) Draw() {
 		rl.DrawText(fmt.Sprintf("Time: %d", phaseDuration), screenHeight/2, 0, 20, rl.White)
 		rl.DrawText(fmt.Sprint(g.Score), screenHeight/4, 0, 20, rl.White)
 		rl.DrawText(fmt.Sprintf("Goal: %d", currentMap.Goal), screenHeight/4*3, 0, 20, rl.White)
+		rl.DrawText(fmt.Sprintf("Coef: %f", coeficient), 0, 0, 20, rl.White)
 		rl.DrawRectangle(int32(g.Snake.Head.X), int32(g.Snake.Head.Y), snakeSize, snakeSize, purple)
 
 		DrawNewMapTimer()
@@ -460,13 +464,14 @@ func InitPhaseCounter() {
 
 func DrawInitialMenu() {
 	rl.ClearBackground(grayDark)
-	containerOffset := 10
 	containerSize := 400
-	subcontainerSize := containerSize - 20
-	container := rl.NewRectangle(midPosition.X, midPosition.Y, float32(containerSize), float32(containerSize))
-	subcontainer := rl.NewRectangle(container.X+float32(containerOffset), container.Y+float32(containerOffset), float32(subcontainerSize), float32(subcontainerSize))
+	container := rl.NewRectangle(
+		midPosition.X, 
+		midPosition.Y, 
+		float32(containerSize), 
+		float32(containerSize),
+	)
 	rl.DrawRectangleRec(container, purple)
-	rl.DrawRectangleRec(subcontainer, grayDark)
 	rl.DrawText("Start: Enter", int32(midPosition.X)-100, int32(midPosition.Y)+100, 20, rl.White)
 	rl.DrawText("Quit: ESC", int32(midPosition.X)-100, int32(midPosition.Y)+120, 20, rl.White)
 }
