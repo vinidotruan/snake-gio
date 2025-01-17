@@ -41,7 +41,6 @@ var (
 	shouldMove = true
 	goingToNextMap = false
 	midPosition = rl.NewVector2(screenWidth/2, screenHeight/2)
-  isEditing = false
 	pastTimming = 0.0
 
 	countdown = 3
@@ -53,6 +52,8 @@ var (
 
 	coeficient = 0.1
 	deltaSpeed = 0.005
+
+	obstacleSize = 80
 )
 
 type Snake struct {
@@ -71,7 +72,6 @@ type Food struct {
 	Status bool
 }
 
-
 type Obstacle struct {
 	Shape  rl.Rectangle
 	Status bool
@@ -86,6 +86,7 @@ type Map struct {
 type Game struct {
 	GameOver  bool
 	Paused    bool
+	Editing bool
 	Score     int32
 	Snake     Snake
 	Foods     []Food
@@ -131,7 +132,7 @@ func (g *Game) Pause() {
 }
 
 func (g *Game) ControlsHandler() {
-  if !isEditing {
+  if !g.Editing {
     if rl.IsKeyPressed(rl.KeyP) {
       g.Pause()
     }
@@ -157,12 +158,13 @@ func (g *Game) ControlsHandler() {
     }
 
     if rl.IsKeyPressed(rl.KeyEnter) {
+			fmt.Println("Cara")
       g.Init()
     }
   }
 
   if rl.IsKeyPressed(rl.KeyE) {
-    isEditing = !isEditing;
+    g.Editing = !g.Editing;
   }
 
 	if rl.IsKeyPressed(rl.KeyEscape) {
@@ -349,16 +351,10 @@ func (g *Game) Update() {
 
 func (g *Game) Draw() {
 	rl.BeginDrawing() 
-  var color rl.Color
 
-  if isEditing {
-    color = editingBackground
-  } else {
-    color = background
-  }
-  rl.ClearBackground(color)
+  rl.ClearBackground(grayDark)
 
-	if g.Gaming && !isEditing {
+	if g.Gaming && !g.Editing {
 		if !g.Paused && !inPhaseCounter {
 			phaseDuration = int(time.Since(timer).Abs().Seconds())
 		}
@@ -375,7 +371,7 @@ func (g *Game) Draw() {
 		g.DrawFruits()
 		g.DrawObstacles()
 		g.DrawPausedGUI()
-	} else if isEditing {
+	} else if g.Editing {
     DrawBlock()
     DrawGrid()
   } else {
@@ -411,15 +407,16 @@ func getRandomPosition() rl.Vector2 {
 func DrawBlock() {
   x := int32(rl.GetMouseX()/snakeSize)*snakeSize
   y := int32(rl.GetMouseY()/snakeSize)*snakeSize
-  fmt.Println("X: ", rl.GetMouseX())
-  fmt.Println("X formatado: ", x)
-  rl.DrawRectangle(x-40, y-40, 80, 80, red)
+
+  rl.DrawRectangle(x-int32(obstacleSize/2), y-int32(obstacleSize/2), int32(obstacleSize), int32(obstacleSize), red)
+	if rl.IsMouseButtonPressed(rl.MouseLeftButton) {
+	}
 }
 
 func DrawGrid() {
   var color rl.Color
   var limits rl.Color
-  if isEditing {
+  if game.Editing {
     limits = red
     color = rl.NewColor(37, 35, 43, 255)
   } else {
